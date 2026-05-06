@@ -1,0 +1,39 @@
+---
+BasedOnStyle: LLVM
+IndentWidth: 4
+UseTab: Never
+ColumnLimit: 100
+AccessModifierOffset: -4
+BreakBeforeBraces: Allman
+
+# 指针对齐
+PointerAlignment: Right
+ReferenceAlignment: Right
+
+# 空格规则
+SpaceAfterCStyleCast: true
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeRangeBasedForLoopColon: true
+
+# 换行规则
+AlignEscapedNewlines: Right
+AllowShortFunctionsOnASingleLine: None
+AllowShortLambdasOnASingleLine: All
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: false
+
+# 对齐规则
+AlignAfterOpenBracket: AlignAfterOpenBracket
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignOperands: true
+
+# Include 分组
+IncludeBlocks: Regroup
+IncludeIsMainRegex: "(Test)?$"
+IncludeSortPragmas: true
+
+# 其他
+ReflowComments: true
+SortIncludes: true
+MaxEmptyLinesToKeep: 2
