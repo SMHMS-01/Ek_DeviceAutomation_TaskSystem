@@ -1,0 +1,57 @@
+# Binaries
+*.o
+*.a
+*.so
+*.dylib
+*.exe
+*.dll
+*.lib
+
+# Build directories
+build/
+dist/
+cmake-build-*/
+out/
+.vs/
+.vscode/
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.user
+*.vc.db
+
+# Dependencies
+/vendor/
+/node_modules/
+/Third_Party/
+
+# Logs
+*.log
+logs/
+*.pid
+*.seed
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+.~*
+
+# OS
+Thumbs.db
+.DS_Store
+*.lnk
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment
+.env
+.env.local
+.env.*.local
