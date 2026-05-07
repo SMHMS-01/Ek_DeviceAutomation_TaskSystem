@@ -199,7 +199,7 @@ Valgrind 报告:
 
 ## Phase 2: Infrastructure Layer 基础设施
 
-**周期**: Week 4-6 | **负责人**: [待分配] | **状态**: ⏳ 未开始
+**周期**: Week 4-6 | **负责人**: [待分配] | **状态**: 🔧 进行中 (scaffolding)
 
 ### 实现要点
 
@@ -231,6 +231,11 @@ Valgrind 报告:
 ```
 [待填充]
 ```
+
+**Scaffolding status (2026-05-07)**:
+- ✅ Created headers: `src/infrastructure/IDatabase.h`, `src/infrastructure/SqliteDatabase.h`, `src/infrastructure/EventBus.h`, `src/infrastructure/IDevice.h`, `src/infrastructure/MockDevice.h`, `src/infrastructure/PluginLoader.h`, `src/infrastructure/WatchDog.h`, `src/infrastructure/Logger.h`
+- ✅ Added `src/infrastructure/CMakeLists.txt` and exposed `device_automation_infrastructure` INTERFACE target for initial integration
+
 
 #### 🧪 单元测试
 
