@@ -76,9 +76,10 @@
 | 测试套件 | 总数 | 通过 | 失败 | 跳过 | 状态 |
 |---------|------|------|------|------|------|
 | TaskStateMachineTest | 19 | 19 | 0 | 0 | ✅ |
+| Types/Priority (standalone) | 3 | 3 | 0 | 0 | ✅ |
 | TypesTest | 0 | 0 | 0 | 0 | ⏳ |
 | PriorityTest | 0 | 0 | 0 | 0 | ⏳ |
-| **小计 Phase 1.2** | **19** | **19** | **0** | **0** | **✅** |
+| **小计 Phase 1.2** | **22** | **22** | **0** | **0** | **✅** |
 | TaskGraphTest | ___ | ___ | ___ | ___ | ⏳ |
 | CheckPointTest | ___ | ___ | ___ | ___ | ⏳ |
 | RetryPolicyTest | ___ | ___ | ___ | ___ | ⏳ |
@@ -109,19 +110,23 @@ Phase 1.2: TaskStateMachine FSM - Unit Tests
 ✓ RollbackCycle
 ✓ CancelFromPending
 ✓ CancelFromRunning
+✓ TaskIdGenerateCreatesUniqueIds
+✓ TimestampNow
+✓ PriorityComparisons
 
 ======================================================================
 TEST SUMMARY - Phase 1.2
 ======================================================================
-Total:  19
-Passed: 19
+======================================================================
+
+Total:  22
+Passed: 22
 Failed: 0
 Pass Rate: 100%
-======================================================================
 
 ✅ Compiler: g++ 11.4.0, C++20
 ✅ Build Status: SUCCESS
-✅ Binary: test_phase_1_2
+✅ Binary: build/tests/test_phase_1_2_standalone
 ```
 
 #### 🔍 静态分析
@@ -173,9 +178,9 @@ Valgrind 报告:
 
 ### 最终决议
 
-**审批者**: [________________] | **日期**: [____________]
+**审批者**: [hms03] | **日期**: [2026年5月7日20点39分]
 
-- [ ] ✅ **通过** - Phase 1 验收完成，可进入 Phase 2
+- [x] ✅ **通过** - Phase 1 验收完成，可进入 Phase 2
 - [ ] ⏸️ **条件通过** - 需修复以下问题后重审:
   ```
   [列出需修复的问题]

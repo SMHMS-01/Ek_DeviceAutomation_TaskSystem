@@ -2,6 +2,9 @@
 #include <cassert>
 #include <vector>
 #include <string>
+#include <set>
+#include "domain/Types.h"
+#include "domain/Priority.h"
 
 // ============================================================================
 // Minimal Test Framework (for demonstration without external deps)
@@ -311,6 +314,30 @@ TEST(CancelFromRunning) {
     ASSERT_EQ(static_cast<int>(fsm.current_state()), static_cast<int>(TaskState::Cancelled));
 }
 
+TEST(TaskIdGenerateCreatesUniqueIds) {
+    using namespace device_automation::domain;
+    std::set<std::string> ids;
+    for (int i = 0; i < 16; ++i) {
+        auto t = TaskId::generate();
+        ids.insert(t.to_string());
+    }
+    ASSERT_EQ(ids.size(), 16);
+}
+
+TEST(TimestampNow) {
+    using namespace device_automation::domain;
+    auto a = Timestamp::now();
+    auto b = Timestamp::now();
+    ASSERT_TRUE(b.millis() >= a.millis());
+}
+
+TEST(PriorityComparisons) {
+    using namespace device_automation::domain;
+    ASSERT_TRUE(Priority::Critical < Priority::High);
+    ASSERT_TRUE(Priority::High <= Priority::Normal);
+    ASSERT_TRUE(Priority::Background > Priority::Low);
+}
+
 // ============================================================================
 // Main: Execute All Tests
 // ============================================================================
@@ -396,6 +423,18 @@ int main() {
     try {
         RUN_TEST(CancelFromRunning);
     } catch (...) { g_test_result.record_fail("CancelFromRunning", "exception"); }
+
+    try {
+        RUN_TEST(TaskIdGenerateCreatesUniqueIds);
+    } catch (...) { g_test_result.record_fail("TaskIdGenerateCreatesUniqueIds", "exception"); }
+
+    try {
+        RUN_TEST(TimestampNow);
+    } catch (...) { g_test_result.record_fail("TimestampNow", "exception"); }
+
+    try {
+        RUN_TEST(PriorityComparisons);
+    } catch (...) { g_test_result.record_fail("PriorityComparisons", "exception"); }
 
     // Print results
     g_test_result.print_summary();

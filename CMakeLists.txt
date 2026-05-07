@@ -76,13 +76,9 @@ include_directories(/usr/include)
 # 主源代码
 add_subdirectory(src)
 
-# 测试
-if(GTest_FOUND)
-    enable_testing()
-    add_subdirectory(tests)
-else()
-    message(STATUS "Google Test not found - tests disabled")
-endif()
+# 测试目录（始终添加子目录，子目录内会根据可用的测试框架决定具体 targets）
+enable_testing()
+add_subdirectory(tests)
 
 # 文档
 if(DOXYGEN_FOUND)
