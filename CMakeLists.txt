@@ -70,6 +70,14 @@ find_package(GTest CONFIG QUIET)
 find_package(benchmark CONFIG QUIET)
 find_package(Doxygen QUIET)
 
+# Optional high-performance logging library
+find_package(spdlog CONFIG QUIET)
+if(spdlog_FOUND)
+    message(STATUS "spdlog found: using spdlog for logging")
+else()
+    message(STATUS "spdlog not found - using fallback logger implementation")
+endif()
+
 # 添加系统包含路径（用于 header-only 库）
 include_directories(/usr/include)
 

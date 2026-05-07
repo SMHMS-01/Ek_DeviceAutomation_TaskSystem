@@ -236,6 +236,11 @@ Valgrind 报告:
 - ✅ Created headers: `src/infrastructure/IDatabase.h`, `src/infrastructure/SqliteDatabase.h`, `src/infrastructure/EventBus.h`, `src/infrastructure/IDevice.h`, `src/infrastructure/MockDevice.h`, `src/infrastructure/PluginLoader.h`, `src/infrastructure/WatchDog.h`, `src/infrastructure/Logger.h`
 - ✅ Added `src/infrastructure/CMakeLists.txt` and exposed `device_automation_infrastructure` INTERFACE target for initial integration
 
+**Third-party integrations (per DesignDoc recommendations)**:
+- ✅ `spdlog` logging integration: CMake will enable `spdlog` when available and compile the infrastructure to use it (`USE_SPDLOG`); otherwise a fallback logger is used.
+- ⚠️ `eventpp`, `Taskflow`, `SQLiteCpp` and other recommended libs are noted in the design doc and will be integrated when their packages are available on the build host. Current scaffolding is ready to link them conditionally.
+
+
 
 #### 🧪 单元测试
 
