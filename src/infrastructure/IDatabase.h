@@ -1,8 +1,13 @@
 #pragma once
 
+#include <map>
 #include <string>
+#include <vector>
 
 namespace device_automation::infrastructure {
+
+using DatabaseRow = std::map<std::string, std::string>;
+using QueryResult = std::vector<DatabaseRow>;
 
 /**
  * Minimal database interface for scaffolding.
@@ -20,6 +25,9 @@ public:
 
     // Execute simple SQL statement (no result set support in scaffold)
     virtual bool execute(const std::string& sql) = 0;
+
+    // Execute a SELECT-like query and return stringified rows.
+    virtual QueryResult query(const std::string& sql) = 0;
 };
 
 } // namespace device_automation::infrastructure

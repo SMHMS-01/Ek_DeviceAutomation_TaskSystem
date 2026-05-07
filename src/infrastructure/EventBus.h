@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -15,6 +16,9 @@ public:
     EventBus() = default;
     ~EventBus() = default;
 
+    // Subscriber entry with id
+    struct Subscriber { int id; EventCallback cb; };
+
     // Subscribe to an event key, returns subscription id
     int subscribe(const std::string& key, EventCallback cb);
 
@@ -25,7 +29,8 @@ public:
     void publish(const std::string& key, const std::string& payload);
 
 private:
-    std::unordered_map<std::string, std::vector<EventCallback>> subs_;
+    std::unordered_map<std::string, std::vector<Subscriber>> subs_;
+    std::mutex mu_;
     int next_id_ = 1;
 };
 

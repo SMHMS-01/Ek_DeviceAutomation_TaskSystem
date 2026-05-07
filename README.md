@@ -63,18 +63,21 @@ The Device Automation Task System is a comprehensive framework designed to autom
 
 ## Project Status
 
-**Current Phase**: Design (v1.0)
+**Current Phase**: Core scaffold implemented (v1.1)
 
-- ✅ Complete architecture and design document
-- ✅ Task FSM state machine specification
-- ✅ DAG scheduling algorithm design
-- ✅ Device abstraction framework
-- ⏳ Implementation (pending)
+- ✅ Original architecture and design document
+- ✅ Optimized v1.1 design document with acceptance boundary
+- ✅ Task FSM engine and base domain types
+- ✅ Task and TaskGraph implementation with DAG cycle detection
+- ✅ Simple DAG scheduler with SQLite-backed audit writes
+- ✅ AuditService with task audit replay and interrupted task recovery
+- ✅ Thread-safe EventBus and SQLite infrastructure implementation
+- ✅ Standalone and end-to-end acceptance tests
 
 ## Documentation
 
 ### Core References
-- [Design Document](DeviceAutomation_TaskSystem_DesignDoc.md) — Full technical specification covering:
+- [Design Document](DeviceAutomation_TaskSystem_DesignDoc.md) — Original full technical specification covering:
   - System goals and constraints
   - Complete architecture
   - Task model and FSM
@@ -96,6 +99,12 @@ The Device Automation Task System is a comprehensive framework designed to autom
   - Design trade-offs and considerations
 
 - [FSM State Machine Diagram](任务%20FSM%20状态机.png) — Visual representation of task state transitions
+
+- [Optimized Design v1.1](DeviceAutomation_TaskSystem_DesignDoc_v1.1_Optimized.md) — Engineering refinement covering:
+  - v1.0 design gaps
+  - minimum acceptance scope
+  - implemented module boundaries
+  - current verification workflow
 
 ## Design Principles
 
@@ -120,15 +129,24 @@ The Device Automation Task System is a comprehensive framework designed to autom
 2. Review the [FSM diagram](任务%20FSM%20状态机.png) for state machine overview
 3. Check [AGENTS.md](AGENTS.md) for implementation patterns
 
+### Build and Acceptance
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Debug
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+Current acceptance includes standalone domain/FSM checks, an end-to-end DAG workflow, and persistence recovery verification.
+
 ### For Implementation
-The project is ready for development across the following components (in priority order):
-1. **Task FSM Engine** — Core state machine and transitions
-2. **DAG Scheduler** — Dependency resolution and task ordering
-3. **Executor Pool** — Thread/coroutine/device executors
-4. **Persistence Layer** — State serialization and recovery
+The project is ready for continued development across the following components:
+1. **Executor Pool** — Thread/coroutine/device executors
+2. **Recovery Queries** — Database query APIs and restart recovery
+3. **Manual Intervention Service** — Permissioned pause/resume/retry/force-complete
+4. **WatchDog and TimeoutPolicy** — Soft/hard timeout handling
 5. **Device Abstraction** — Protocol-agnostic device interface
 6. **Plugin System** — Extensible script and driver loading
-7. **Audit Logging** — Comprehensive event tracking
 
 ## Technical Stack
 
@@ -143,8 +161,8 @@ See Section 14 of the design document for detailed open-source library recommend
 
 ## Version
 
-- **Version**: 1.0.0-design
-- **Status**: Design phase (implementation pending)
+- **Version**: 1.1.0-core-scaffold
+- **Status**: Core scaffold implemented and acceptance-tested
 - **Release Date**: May 2026
 
 ## Contributing

@@ -108,6 +108,8 @@ public:
      */
     TaskStateMachine() : state_(TaskState::Pending) {}
 
+    explicit TaskStateMachine(TaskState initial_state) : state_(initial_state) {}
+
     /**
      * @brief 获取当前状态
      */

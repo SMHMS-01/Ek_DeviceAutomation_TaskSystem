@@ -27,3 +27,26 @@ else()
 endif()
 
 # Implementations and extra dependencies (SQLite, etc.) will be added when implemented
+
+# Implementation library for infrastructure components (SQLite-backed DB, EventBus)
+find_package(SQLite3 QUIET)
+
+add_library(device_automation_infrastructure_impl STATIC
+    SqliteDatabase.cpp
+    EventBus.cpp
+)
+
+target_include_directories(device_automation_infrastructure_impl
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..
+)
+
+if(SQLite3_FOUND)
+    message(STATUS "Infrastructure: SQLite3 found, building real SqliteDatabase")
+    target_compile_definitions(device_automation_infrastructure_impl PRIVATE USE_SQLITE3=1)
+    target_link_libraries(device_automation_infrastructure_impl PRIVATE SQLite::SQLite3)
+else()
+    message(STATUS "Infrastructure: SQLite3 not found, building fallback SqliteDatabase mock")
+endif()
+
+target_link_libraries(device_automation_infrastructure_impl PRIVATE device_automation_infrastructure)

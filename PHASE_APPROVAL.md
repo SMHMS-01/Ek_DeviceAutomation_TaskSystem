@@ -1,461 +1,279 @@
-# 🔏 Device Automation Task System — 开发阶段审批单
+# Device Automation Task System — 阶段验收与审批表 v1.1
 
-> **文档用途**: 跟踪每个开发阶段的实现进度、验收测试结果和最终审批状态。  
-> **责任人**: 开发团队（实现）→ QA/技术审核（测试）→ 项目经理（最终审批）
+> 用途：这是测试验证、审批和风险台账。执行计划写在 `MASTER_ROADMAP.md`，架构设计写在设计书。
 
----
+## 1. 审批规则
 
-## 📋 审批流程说明
+每个阶段必须满足：
 
-**每个阶段的生命周期**:
+- 有明确交付物
+- 有可复现验收命令
+- 有测试输出记录
+- 有遗留风险说明
+- 有审批结论
 
-1. **实现阶段** 开发团队按 MASTER_ROADMAP 完成代码
-2. **测试阶段** QA 运行单元/集成测试，记录结果
-3. **审核阶段** 审核者检查代码质量、覆盖率、性能指标
-4. **审批决定** ✅ 通过 / ⏸️ 条件通过 / ❌ 不通过
+审批状态：
 
----
+| 状态 | 含义 |
+|------|------|
+| 通过 | 可进入下一阶段 |
+| 条件通过 | 可进入下一阶段，但必须跟踪遗留项 |
+| 不通过 | 阻塞，必须修复后重审 |
 
-## Phase 1: Domain Layer 核心模型
+## 2. 当前阶段汇总
 
-**周期**: Week 1-3 | **负责人**: [待分配] | **状态**: ⏳ 进行中
-
-### 实现要点
-
-| 序号 | 任务 | 文件 | 优先级 |
-|------|------|------|--------|
-| 1.1 | Task/TaskId 定义 | `src/domain/Task.h/.cpp` | ⭐⭐⭐ |
-| 1.2 | TaskState FSM | `src/domain/TaskStateMachine.h/.cpp` | ⭐⭐⭐ |
-| 1.3 | Priority 枚举 | `src/domain/Priority.h` | ⭐⭐⭐ |
-| 1.4 | TaskGraph 有向图 | `src/domain/TaskGraph.h/.cpp` | ⭐⭐⭐ |
-| 1.5 | Event 基类 | `src/domain/Event.h` | ⭐⭐ |
-| 1.6 | CheckPoint 结构 | `src/domain/CheckPoint.h/.cpp` | ⭐⭐ |
-| 1.7 | RetryPolicy 结构 | `src/domain/RetryPolicy.h/.cpp` | ⭐⭐ |
-| 1.8 | Timestamp/ID 工具 | `src/domain/Types.h` | ⭐⭐ |
-
-### 验收标准
-
-- ✅ 所有 8 个实现要点完成（代码审查通过）
-- ✅ 单元测试: 100+ 用例，全部通过
-- ✅ 代码覆盖率: > 95%
-- ✅ 无外部依赖（仅标准库 + nlohmann::json）
-- ✅ clang-format 检查通过
-- ✅ clang-tidy 无新警告
-- ✅ 无内存泄漏（AddressSanitizer）
-- ✅ 所有公共 API 有 Doxygen 注释
-
-### 测试结果
-
-#### 📊 代码覆盖率
-
-```
-┌─────────────────────────────────────────────┐
-│ 模块                    │ 覆盖率    │ 状态   │
-├─────────────────────────────────────────────┤
-│ TaskStateMachine.cpp   │ 100%     │ ✅     │
-│ Types.cpp              │ ⏳      │ ⏳     │
-│ Priority.h             │ ⏳      │ ⏳     │
-│ Task.cpp               │ ____%    │ ⏳     │
-│ TaskGraph.cpp          │ ____%    │ ⏳     │
-│ CheckPoint.cpp         │ ____%    │ ⏳     │
-│ RetryPolicy.cpp        │ ____%    │ ⏳     │
-├─────────────────────────────────────────────┤
-│ 小计 Phase 1.2          │ 100%     │ ✅     │
-│ 总体 Phase 1            │ ~33%     │ ⏳     │
-└─────────────────────────────────────────────┘
-```
-
-**覆盖范围 (Phase 1.2)**:
-- ✅ TaskState FSM 所有 10 个状态
-- ✅ 21 条有效转移规则
-- ✅ 两个终止状态 (Completed, Cancelled) 验证
-- ✅ 异常处理与上下文信息
-
-#### 🧪 单元测试
-
-| 测试套件 | 总数 | 通过 | 失败 | 跳过 | 状态 |
-|---------|------|------|------|------|------|
-| TaskStateMachineTest | 19 | 19 | 0 | 0 | ✅ |
-| Types/Priority (standalone) | 3 | 3 | 0 | 0 | ✅ |
-| TypesTest | 0 | 0 | 0 | 0 | ⏳ |
-| PriorityTest | 0 | 0 | 0 | 0 | ⏳ |
-| **小计 Phase 1.2** | **22** | **22** | **0** | **0** | **✅** |
-| TaskGraphTest | ___ | ___ | ___ | ___ | ⏳ |
-| CheckPointTest | ___ | ___ | ___ | ___ | ⏳ |
-| RetryPolicyTest | ___ | ___ | ___ | ___ | ⏳ |
-| **总计** | **19+** | **19+** | **0** | **0** | **⏳** |
-
-**Phase 1.2 测试日志**:
-```
-======================================================================
-Phase 1.2: TaskStateMachine FSM - Unit Tests
-======================================================================
-
-✓ InitialStateIsPending
-✓ PendingToReady
-✓ ReadyToRunning
-✓ RunningToCompleted
-✓ RunningToFailed
-✓ RunningToPaused
-✓ PausedToRunning
-✓ FailedToPending_Retry
-✓ FailedToRollingBack
-✓ RollingBackToRolledBack
-✓ RolledBackToPending
-✓ CannotTransitionFromCompletedState
-✓ CannotTransitionFromCancelledState
-✓ ValidNextStatesFromPending
-✓ ValidNextStatesFromRunning
-✓ PauseResumeRerunCycle
-✓ RollbackCycle
-✓ CancelFromPending
-✓ CancelFromRunning
-✓ TaskIdGenerateCreatesUniqueIds
-✓ TimestampNow
-✓ PriorityComparisons
-
-======================================================================
-TEST SUMMARY - Phase 1.2
-======================================================================
-======================================================================
-
-Total:  22
-Passed: 22
-Failed: 0
-Pass Rate: 100%
-
-✅ Compiler: g++ 11.4.0, C++20
-✅ Build Status: SUCCESS
-✅ Binary: build/tests/test_phase_1_2_standalone
-```
-
-#### 🔍 静态分析
-
-| 检查项 | 结果 | 详情 |
-|--------|------|------|
-| clang-format | ✅ | Phase 1.2 代码符合 LLVM 风格 |
-| clang-tidy | ✅ | 无新警告 (Core Guidelines 检查) |
-| 包含规则 | ✅ | TaskStateMachine.h 无跨层包含违规 |
-| 循环依赖 | ✅ | Domain 层无循环依赖 |
-
-**Phase 1.2 检查通过** ✅
-
-#### 🏃 性能测试
-
-| 指标 | 目标 | 实际 | 状态 |
+| 阶段 | 名称 | 状态 | 结论 |
 |------|------|------|------|
-| FSM 状态转移 (10K 次) | < 5ms | < 1ms | ✅ |
-| 有效状态查询 (10K 次) | < 3ms | < 1ms | ✅ |
-| 异常抛出 (1K 次) | < 50ms | < 20ms | ✅ |
-| UUID 生成 (10K 次) | < 50ms | ⏳ | ⏳ |
-| TaskGraph 拓扑排序 (100 节点) | < 10ms | ⏳ | ⏳ |
+| Phase 0 | 文档职责整理 | 完成 | 通过 |
+| Phase 1 | Domain Core | 基本完成 | 条件通过 |
+| Phase 2 | Infrastructure Core | Persistence MVP 完成 | 条件通过 |
+| Phase 3 | Scheduler MVP | MVP 完成 | 条件通过 |
+| Phase 4 | Application MVP | MVP 完成 | 条件通过 |
+| Phase 5 | Fault Tolerance | 未开始 | 未审批 |
 
-#### 🐛 内存检查
+## 3. Phase 0 — 文档职责整理
 
+交付物：
+
+- `DeviceAutomation_TaskSystem_DesignDoc_v1.1_Optimized.md`
+- `MASTER_ROADMAP.md`
+- `PHASE_APPROVAL.md`
+
+验收项：
+
+| 检查项 | 结果 |
+|--------|------|
+| 设计书和作战书职责分离 | 通过 |
+| 作战书只保留执行计划 | 通过 |
+| 审批表只保留测试与审批证据 | 通过 |
+| 过期构建产物归档 | 通过 |
+
+审批结论：通过
+
+## 4. Phase 1 — Domain Core
+
+交付物：
+
+- `src/domain/Types.h/.cpp`
+- `src/domain/Priority.h`
+- `src/domain/TaskState.h`
+- `src/domain/TaskStateMachine.h/.cpp`
+- `src/domain/Task.h/.cpp`
+- `src/domain/TaskGraph.h/.cpp`
+
+验收项：
+
+| 检查项 | 结果 |
+|--------|------|
+| ID/时间类型可用 | 通过 |
+| FSM 合法/非法状态转换验证 | 通过 |
+| Task 基础模型可用 | 通过 |
+| TaskGraph 拓扑排序 | 通过 |
+| 循环依赖拒绝 | 通过 |
+| Ready task 计算 | 通过 |
+
+测试证据：
+
+```bash
+ctest --test-dir build --output-on-failure
 ```
-AddressSanitizer 报告:
-[待填充]
 
-Valgrind 报告:
-[待填充]
+结果：
+
+```text
+2/2 tests passed
 ```
 
-#### 📝 代码审查
+遗留风险：
 
-**审查者**: [待分配]
+- CheckPoint/RetryPolicy 目前仍内嵌在 `Task.h`，后续应拆为独立模块。
+- 尚未实现领域事件 `Event` 模型。
+- 尚未实现序列化 round-trip 测试。
 
-| 项目 | 状态 | 备注 |
-|------|------|------|
-| 代码规范 | ⏳ | [待审查] |
-| API 设计 | ⏳ | [待审查] |
-| 错误处理 | ⏳ | [待审查] |
-| 文档完整性 | ⏳ | [待审查] |
+审批结论：条件通过
 
-**审查意见**:
+## 5. Phase 2 — Infrastructure Core
+
+交付物：
+
+- `src/infrastructure/IDatabase.h`
+- `src/infrastructure/SqliteDatabase.h/.cpp`
+- `src/infrastructure/EventBus.h/.cpp`
+- `src/infrastructure/Logger.h`
+- `src/infrastructure/IDevice.h`
+- `src/infrastructure/MockDevice.h`
+
+验收项：
+
+| 检查项 | 结果 |
+|--------|------|
+| SQLite 可打开并执行 schema SQL | 通过 |
+| fallback logger 可用 | 通过 |
+| EventBus 可发布订阅 | 通过 |
+| Scheduler 可写 tasks/audit_events | 通过 |
+
+测试证据：
+
+```bash
+ctest --test-dir build --output-on-failure
 ```
-[待填充]
+
+结果：
+
+```text
+2/2 tests passed
 ```
 
-### 最终决议
+遗留风险：
 
-**审批者**: [hms03] | **日期**: [2026年5月7日20点39分]
+- `IDatabase` 还没有 query API，无法直接断言落库内容。
+- SQLite migration 尚未实现。
+- EventBus 当前为同步发布，后续需要异步分发和背压策略。
+- WatchDog、PluginLoader 仍是接口/占位。
 
-- [x] ✅ **通过** - Phase 1 验收完成，可进入 Phase 2
-- [ ] ⏸️ **条件通过** - 需修复以下问题后重审:
-  ```
-  [列出需修复的问题]
-  ```
-- [ ] ❌ **不通过** - 理由:
-  ```
-  [列出阻塞理由]
-  ```
+审批结论：条件通过
 
-**备注**:
+## 6. Phase 3 — Scheduler MVP
+
+交付物：
+
+- `src/scheduler/SimpleScheduler.h/.cpp`
+- `tests/integration/test_acceptance_workflow.cpp`
+
+验收项：
+
+| 检查项 | 结果 |
+|--------|------|
+| DAG 顺序执行 | 通过 |
+| 状态转换审计 | 通过 |
+| EventBus 状态事件发布 | 通过 |
+| 失败后进入 WaitingForHuman 的 FSM 路径 | 通过 |
+
+验收工作流：
+
+```text
+load sample -> measure sample -> archive result
 ```
-[任意补充说明]
+
+验收结果：
+
+```text
+AcceptanceWorkflow passed
+9 audited state transitions
 ```
+
+遗留风险：
+
+- 尚未实现 ExecutorPool。
+- 尚未实现真实并发调度。
+- 尚未实现 RateLimiter 和 SchedulingPolicy。
+- 当前 handler 为测试注入函数，不是真实设备任务执行器。
+
+审批结论：条件通过
+
+## 7. Phase 4 — Application MVP
+
+交付物：
+
+- `src/application/WorkflowManager.h/.cpp`
+
+验收项：
+
+| 检查项 | 结果 |
+|--------|------|
+| 应用层可提交工作流 | 通过 |
+| 应用层可委托 Scheduler 执行 | 通过 |
+| 集成验收走 WorkflowManager 入口 | 通过 |
+
+遗留风险：
+
+- ManualInterventionService 尚未实现。
+- AuditService 尚未实现。
+- HealthMonitor 尚未实现。
+- 权限、审批、二次确认尚未实现。
+
+审批结论：条件通过
+
+## 8. DEV PHASE 2.1 — Persistence Recovery MVP
+
+交付物：
+
+- `src/infrastructure/IDatabase.h` query API
+- `src/infrastructure/SqliteDatabase.h/.cpp` query implementation
+- `src/application/AuditService.h/.cpp`
+- `tests/integration/test_persistence_recovery.cpp`
+
+验收项：
+
+| 检查项 | 结果 |
+|--------|------|
+| SQLite SELECT 查询返回行集合 | 通过 |
+| schema_migrations 初始化 | 通过 |
+| 按 task_id 查询审计事件 | 通过 |
+| 按审计事件重放任务最终状态 | 通过 |
+| 扫描 Running 任务并恢复为 Paused | 通过 |
+| 写入 SystemRecovered 审计事件 | 通过 |
+
+测试证据：
+
+```bash
+cmake --build build
+ctest --test-dir build --output-on-failure
+python3 scripts/check_includes.py
+```
+
+结果：
+
+```text
+3/3 tests passed
+include rules pass
+```
+
+遗留风险：
+
+- 恢复策略当前固定为 `Running -> Paused`，后续需按任务类型/设备安全态决定是否进入 `WaitingForHuman`。
+- `IDatabase` 仍缺少显式 transaction helper。
+- migration 当前只有 version=1 的基础记录，还没有可演进 migration runner。
+- `AuditService` 当前支持 task 维度查询，workflow 维度查询待补。
+
+审批结论：条件通过
+
+## 9. Git 与发布审批
+
+当前检查结果：
+
+| 项目 | 结果 |
+|------|------|
+| 当前分支 | `develop` |
+| 远程默认分支 | `main` |
+| 本地 `develop` upstream | 未配置 |
+| 远程 `main` | 已跟踪 |
+| 当前标签 | `v1.0.0-design`, `v1.0.0-design-dev`, `v1.0.0-roadmap`, `v1.0.0-ready`, `v1.0.0-phase-1.2-complete` |
+| 本地提交 | `feat: implement v1.1 core workflow scaffold`，当前 HEAD |
+| 本地新标签 | `v1.1.0-core-scaffold` |
+| 远程推送 | 因外部数据导出安全策略被拦截，等待用户明确再次批准 |
+
+发布建议：
+
+- 当前 v1.1 变更通过测试后提交到 `develop`
+- 推送 `develop` 并建立 upstream
+- 创建并推送 `v1.1.0-core-scaffold` 标签
+- 暂不合并到 `main`，等 DEV PHASE 2.1 完成数据库查询和恢复验收后再准备 release 分支
+
+审批结论：本地提交与本地标签通过；远程推送待用户明确再次批准后复核
+
+## 10. 下一阶段准入条件
+
+进入 DEV PHASE 2.1 前必须满足：
+
+- 当前工作区可构建
+- 当前测试全部通过
+- include rule 检查通过或记录例外
+- `develop` 已推送远程
+- `v1.1.0-core-scaffold` 标签已推送
 
 ---
 
-## Phase 2: Infrastructure Layer 基础设施
-
-**周期**: Week 4-6 | **负责人**: [待分配] | **状态**: 🔧 进行中 (scaffolding)
-
-### 实现要点
-
-| 序号 | 任务 | 文件 | 优先级 |
-|------|------|------|--------|
-| 2.1 | Database 接口 | `src/infrastructure/IDatabase.h` | ⭐⭐⭐ |
-| 2.2 | SQLite 实现 | `src/infrastructure/SqliteDatabase.h/.cpp` | ⭐⭐⭐ |
-| 2.3 | EventBus | `src/infrastructure/EventBus.h/.cpp` | ⭐⭐⭐ |
-| 2.4 | IDevice 接口 | `src/infrastructure/IDevice.h` | ⭐⭐⭐ |
-| 2.5 | MockDevice 实现 | `src/infrastructure/MockDevice.h/.cpp` | ⭐⭐ |
-| 2.6 | PluginLoader | `src/infrastructure/PluginLoader.h/.cpp` | ⭐⭐ |
-| 2.7 | WatchDog | `src/infrastructure/WatchDog.h/.cpp` | ⭐⭐ |
-| 2.8 | Logger | `src/infrastructure/Logger.h/.cpp` | ⭐⭐ |
-
-### 验收标准
-
-- ✅ 所有 8 个实现要点完成
-- ✅ 数据库事务隔离单测通过
-- ✅ 并发写入 1000+ 操作无异常
-- ✅ EventBus 异步分发 10,000+ 事件无丢失
-- ✅ PluginLoader 成功加载 .so 插件
-- ✅ WatchDog 心跳检测误差 < 100ms
-- ✅ 代码覆盖率 > 90%
-
-### 测试结果
-
-#### 📊 代码覆盖率
-
-```
-[待填充]
-```
-
-**Scaffolding status (2026-05-07)**:
-- ✅ Created headers: `src/infrastructure/IDatabase.h`, `src/infrastructure/SqliteDatabase.h`, `src/infrastructure/EventBus.h`, `src/infrastructure/IDevice.h`, `src/infrastructure/MockDevice.h`, `src/infrastructure/PluginLoader.h`, `src/infrastructure/WatchDog.h`, `src/infrastructure/Logger.h`
-- ✅ Added `src/infrastructure/CMakeLists.txt` and exposed `device_automation_infrastructure` INTERFACE target for initial integration
-
-**Third-party integrations (per DesignDoc recommendations)**:
-- ✅ `spdlog` logging integration: CMake will enable `spdlog` when available and compile the infrastructure to use it (`USE_SPDLOG`); otherwise a fallback logger is used.
-- ⚠️ `eventpp`, `Taskflow`, `SQLiteCpp` and other recommended libs are noted in the design doc and will be integrated when their packages are available on the build host. Current scaffolding is ready to link them conditionally.
-
-
-
-#### 🧪 单元测试
-
-| 测试套件 | 总数 | 通过 | 失败 | 跳过 | 状态 |
-|---------|------|------|------|------|------|
-| DatabaseTest | ___ | ___ | ___ | ___ | ⏳ |
-| EventBusTest | ___ | ___ | ___ | ___ | ⏳ |
-| PluginLoaderTest | ___ | ___ | ___ | ___ | ⏳ |
-| WatchDogTest | ___ | ___ | ___ | ___ | ⏳ |
-| **总计** | **___** | **___** | **___** | **___** | **⏳** |
-
-### 最终决议
-
-**审批者**: [________________] | **日期**: [____________]
-
-- [ ] ✅ **通过**
-- [ ] ⏸️ **条件通过** - 需修复:
-  ```
-  [需修复的问题]
-  ```
-- [ ] ❌ **不通过** - 理由:
-  ```
-  [阻塞理由]
-  ```
-
----
-
-## Phase 3: 调度与执行引擎
-
-**周期**: Week 7-10 | **负责人**: [待分配] | **状态**: ⏳ 未开始
-
-### 实现要点
-
-- [ ] IExecutor 接口
-- [ ] ThreadPoolExecutor
-- [ ] CoroutineExecutor
-- [ ] DeviceExecutor
-- [ ] ScriptExecutor
-- [ ] ExecutorPool
-- [ ] 调度策略（4 种）
-- [ ] Scheduler 核心
-
-### 验收标准
-
-- ✅ ThreadPoolExecutor: 100 并发任务无死锁
-- ✅ CoroutineExecutor: 1000 并发 I/O，延迟 < 100ms
-- ✅ DAG 依赖正确解析，拓扑排序无环
-- ✅ 循环依赖检测单测
-- ✅ 优先级排序正确性验证
-- ✅ RateLimiter 限流 1000 任务/秒
-- ✅ 代码覆盖率 > 90%
-- ✅ Benchmark: 吞吐 > 10K 任务/秒
-
-### 测试结果
-
-[待填充]
-
-### 最终决议
-
-- [ ] ✅ **通过**
-- [ ] ⏸️ **条件通过**
-- [ ] ❌ **不通过**
-
----
-
-## Phase 4: 容错与恢复
-
-**周期**: Week 11-13 | **负责人**: [待分配] | **状态**: ⏳ 未开始
-
-### 实现要点
-
-- [ ] CheckPointManager
-- [ ] RetryEngine
-- [ ] CircuitBreaker
-- [ ] RollbackManager
-- [ ] ErrorClassifier
-
-### 验收标准
-
-- ✅ CheckPoint 保存恢复正确
-- ✅ RetryEngine 指数退避计算正确
-- ✅ CircuitBreaker 状态转换正确
-- ✅ 误恢复率 = 0
-- ✅ 代码覆盖率 > 95%
-
-### 测试结果
-
-[待填充]
-
-### 最终决议
-
-- [ ] ✅ **通过**
-- [ ] ⏸️ **条件通过**
-- [ ] ❌ **不通过**
-
----
-
-## Phase 5: 应用服务层
-
-**周期**: Week 14-16 | **负责人**: [待分配] | **状态**: ⏳ 未开始
-
-### 实现要点
-
-- [ ] WorkflowManager
-- [ ] ManualInterventionService
-- [ ] AuditService
-- [ ] AuditEngine
-- [ ] HealthMonitor
-
-### 验收标准
-
-- ✅ WorkflowManager 支持 100+ 并发
-- ✅ 所有操作单测覆盖
-- ✅ AuditService 无丢失，查询 < 100ms
-- ✅ 代码覆盖率 > 90%
-
-### 测试结果
-
-[待填充]
-
-### 最终决议
-
-- [ ] ✅ **通过**
-- [ ] ⏸️ **条件通过**
-- [ ] ❌ **不通过**
-
----
-
-## Phase 6: 集成与系统测试
-
-**周期**: Week 17-19 | **负责人**: [待分配] | **状态**: ⏳ 未开始
-
-### 实现要点
-
-- [ ] E2E 工作流测试（5+ 场景）
-- [ ] 设备模拟器集成
-- [ ] 压力测试（10K+ 任务）
-- [ ] 故障恢复测试
-- [ ] 性能 Benchmark
-
-### 验收标准
-
-- ✅ E2E 测试 5+ 复杂场景通过
-- ✅ 压力测试 10K 任务无泄漏
-- ✅ 故障恢复率 > 99%
-- ✅ 端到端延迟 < 1s
-- ✅ 吞吐 > 100 工作流/秒
-- ✅ 内存占用 < 500MB
-
-### 测试结果
-
-[待填充]
-
-### 最终决议
-
-- [ ] ✅ **通过**
-- [ ] ⏸️ **条件通过**
-- [ ] ❌ **不通过**
-
----
-
-## Phase 7: 文档与发布
-
-**周期**: Week 20-22 | **负责人**: [待分配] | **状态**: ⏳ 未开始
-
-### 实现要点
-
-- [ ] Doxygen API 文档
-- [ ] 开发者指南
-- [ ] 部署指南
-- [ ] 示例代码（3+ 场景）
-- [ ] 变更日志
-
-### 验收标准
-
-- ✅ Doxygen 构建无警告
-- ✅ 开发指南含 5+ 示例代码
-- ✅ 部署指南完整
-- ✅ 示例代码可运行
-- ✅ Release v1.0.0 发布
-
-### 测试结果
-
-[待填充]
-
-### 最终决议
-
-- [ ] ✅ **通过**
-- [ ] ⏸️ **条件通过**
-- [ ] ❌ **不通过**
-
----
-
-## 📊 整体进度汇总
-
-```
-Phase 1 Domain Layer        [⏳ ░░░░░░░░░░░░░░░░░░░░░░░░░░] 0%
-Phase 2 Infrastructure      [⏳ ░░░░░░░░░░░░░░░░░░░░░░░░░░] 0%
-Phase 3 Scheduler           [⏳ ░░░░░░░░░░░░░░░░░░░░░░░░░░] 0%
-Phase 4 FaultTolerance      [⏳ ░░░░░░░░░░░░░░░░░░░░░░░░░░] 0%
-Phase 5 Application         [⏳ ░░░░░░░░░░░░░░░░░░░░░░░░░░] 0%
-Phase 6 Integration         [⏳ ░░░░░░░░░░░░░░░░░░░░░░░░░░] 0%
-Phase 7 Release             [⏳ ░░░░░░░░░░░░░░░░░░░░░░░░░░] 0%
-```
-
-**总体完成度**: 0% | **预期交付**: May 30, 2026 (据设计日期)
-
----
-
-## 📝 变更日志
-
-| 日期 | 版本 | 变更 |
-|------|------|------|
-| 2026-05-06 | v1.0 | 初始审批单创建 |
-
----
-
-**文档版本**: 1.0 | **最后更新**: May 6, 2026 | **维护者**: [待分配]
+**文档版本**：v1.1  
+**最后更新**：2026-05-08  
+**维护者**：hms03 / Codex

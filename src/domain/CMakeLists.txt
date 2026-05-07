@@ -3,6 +3,8 @@
 add_library(device_automation_domain
     Types.cpp
     TaskStateMachine.cpp
+    Task.cpp
+    TaskGraph.cpp
 )
 
 target_include_directories(device_automation_domain

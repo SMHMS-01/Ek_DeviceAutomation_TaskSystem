@@ -30,8 +30,9 @@ static bool is_valid_transition(TaskState from, TaskState to)
         return false;
 
     case TaskState::Failed:
-        // Failed 可转移到：Pending（重试）, RollingBack, Cancelled
-        return to == TaskState::Pending || to == TaskState::RollingBack || to == TaskState::Cancelled;
+        // Failed 可转移到：Pending（重试）, RollingBack, WaitingForHuman, Cancelled
+        return to == TaskState::Pending || to == TaskState::RollingBack ||
+               to == TaskState::WaitingForHuman || to == TaskState::Cancelled;
 
     case TaskState::Cancelled:
         // Cancelled 是终态，不可转移
