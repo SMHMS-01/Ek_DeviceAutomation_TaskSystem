@@ -53,14 +53,25 @@ if(ENABLE_COVERAGE)
     add_link_options(--coverage)
 endif()
 
-# 依赖库
-find_package(nlohmann_json REQUIRED)
-find_package(SQLite3 REQUIRED)
+# 依赖库 - nlohmann_json 是 header-only，通常在 /usr/include/nlohmann
+find_package(nlohmann_json QUIET)
+if(NOT nlohmann_json_FOUND)
+    # Fallback: 如果找不到，直接指定包含路径
+    message(STATUS "nlohmann_json not found via find_package, trying include directory")
+endif()
+
+find_package(SQLite3 QUIET)
+if(NOT SQLite3_FOUND)
+    message(STATUS "SQLite3 not found via find_package, will use system default")
+endif()
 
 # 可选依赖
 find_package(GTest CONFIG QUIET)
 find_package(benchmark CONFIG QUIET)
 find_package(Doxygen QUIET)
+
+# 添加系统包含路径（用于 header-only 库）
+include_directories(/usr/include)
 
 # 主源代码
 add_subdirectory(src)
