@@ -13,7 +13,7 @@
 | R-001 | PHASE 1 | `src/domain/Task.h` | `CheckPoint`/`RetryPolicy` 暂内嵌 | 领域模型会膨胀，后续恢复、重试、序列化难以独立测试 | PHASE 2.2 前拆到 `CheckPoint.h/.cpp`、`RetryPolicy.h/.cpp` | 独立单测覆盖 checkpoint 序列化和 backoff 计算 | Open |
 | R-002 | PHASE 1 | `src/domain/` | 缺少独立 `Event` 领域模型 | 审计事件和事件总线 payload 仍偏字符串，难以保证 schema 演进 | 引入 `Event`/`AuditEvent` 类型，避免跨层自由字符串 | Scheduler/AuditService 使用结构化事件 | Open |
 | R-003 | PHASE 2 | `src/infrastructure/IDatabase.h` | DB API 仍偏底层 SQL | 调用方需要拼 SQL，存在重复和注入风险 | 保留 SQLite 直接 SQL 作为 MVP；后续增加 repository 或 statement binding | 关键写入路径不再手工拼接用户输入 | Open |
-| R-004 | PHASE 2 | `src/infrastructure/SqliteDatabase.cpp` | migration runner 仅有 version=1 基础记录 | schema 演进无法表达多版本升级和回滚 | 增加 migration 列表、幂等应用、失败回滚 | 新增 migration 单测覆盖重复执行和失败回滚 | Open |
+| R-004 | PHASE 2.1 | `src/infrastructure/SchemaMigration.*` | migration runner 缺失 | schema 演进无法表达多版本升级和回滚 | 已增加 migration 列表、幂等应用、失败回滚 | `PersistenceRecovery` 覆盖重复执行和失败回滚 | Closed |
 | R-005 | PHASE 2 | `src/infrastructure/EventBus.*` | 当前同步发布 | 慢订阅者会阻塞调度器，异常隔离虽有但没有背压 | 短期可接受；若进入高频设备事件，优先评估 `eventpp` 或异步队列 | 事件吞吐/背压测试通过 | Open |
 | R-006 | PHASE 2 | `src/infrastructure/MockDevice.h` | MockDevice 不支持延迟/故障注入 | 容错、重试和恢复场景测试不足 | PHASE 2.2 扩展 MockDeviceSimulator | 可配置 timeout、transient failure、permanent failure | Open |
 | R-007 | PHASE 3 | `src/scheduler/SimpleScheduler.*` | SimpleScheduler 非真实 ExecutorPool | 不能代表设备串行、并发取消、暂停恢复等真实执行行为 | PHASE 3 引入 ExecutorPool；优先参考 BS::thread_pool/Taskflow | ExecutorPool 集成测试通过 | Open |

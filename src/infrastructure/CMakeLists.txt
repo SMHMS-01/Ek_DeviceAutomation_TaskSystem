@@ -32,6 +32,7 @@ endif()
 find_package(SQLite3 QUIET)
 
 add_library(device_automation_infrastructure_impl STATIC
+    SchemaMigration.cpp
     SqliteDatabase.cpp
     EventBus.cpp
 )

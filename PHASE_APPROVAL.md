@@ -35,8 +35,8 @@
 |------|------|------|------|
 | Phase 0 | 文档职责整理 | 完成 | 通过 |
 | Phase 1 | Domain Core | 基本完成 | 条件通过 |
-| Phase 2 | Infrastructure Core | PHASE 2.1 开发中 | 条件通过，隐患入台账 |
-| Phase 3 | Scheduler MVP | MVP 完成 | 条件通过 |
+| Phase 2 | Infrastructure Core | PHASE 2.1 完成 | 通过，非阻塞隐患入台账 |
+| Phase 3 | Scheduler & Executors | 准备进入 | 未审批 |
 | Phase 4 | Application MVP | MVP 完成 | 条件通过 |
 | Phase 5 | Fault Tolerance | 未开始 | 未审批 |
 
@@ -195,13 +195,14 @@ AcceptanceWorkflow passed
 
 审批结论：条件通过
 
-## 8. DEV PHASE 2.1 — Persistence Recovery MVP
+## 8. PHASE 2.1 — Persistence Recovery
 
 交付物：
 
 - `src/infrastructure/IDatabase.h` query API
 - `src/infrastructure/SqliteDatabase.h/.cpp` query implementation
 - `src/infrastructure/IDatabase.h` transaction API
+- `src/infrastructure/SchemaMigration.h/.cpp`
 - `src/application/AuditService.h/.cpp`
 - `tests/integration/test_persistence_recovery.cpp`
 
@@ -217,6 +218,8 @@ AcceptanceWorkflow passed
 | 扫描 Running 任务并恢复为 Paused | 通过 |
 | 写入 SystemRecovered 审计事件 | 通过 |
 | SQLite transaction commit/rollback | 通过 |
+| Migration runner 幂等执行 | 通过 |
+| Migration runner 失败回滚 | 通过 |
 
 测试证据：
 
@@ -233,9 +236,9 @@ python3 scripts/check_includes.py
 include rules pass
 ```
 
-遗留风险：见 `RISK_REGISTER.md` 的 R-003、R-004、R-009。
+遗留风险：见 `RISK_REGISTER.md` 的 R-003、R-009。R-004 已在 PHASE 2.1 关闭。
 
-审批结论：条件通过
+审批结论：通过，可进入 PHASE 3
 
 ## 9. Git 与发布审批
 
@@ -257,19 +260,19 @@ include rules pass
 - 当前 v1.1 变更通过测试后提交到 `develop`
 - 推送 `develop` 并建立 upstream
 - 创建并推送 `v1.1.0-core-scaffold` 标签
-- 暂不合并到 `main`，等 DEV PHASE 2.1 完成数据库查询和恢复验收后再准备 release 分支
+- 暂不合并到 `main`，PHASE 2.1 已完成；进入 PHASE 3 前可推送 `develop` 作为集成基线
 
 审批结论：本地提交与本地标签通过；远程推送待用户明确再次批准后复核
 
 ## 10. 下一阶段准入条件
 
-进入 DEV PHASE 2.1 前必须满足：
+进入 PHASE 3 前必须满足：
 
 - 当前工作区可构建
 - 当前测试全部通过
 - include rule 检查通过或记录例外
-- `develop` 已推送远程
-- `v1.1.0-core-scaffold` 标签已推送
+- PHASE 2.1 非阻塞隐患已记录在 `RISK_REGISTER.md`
+- `develop` 当前可作为 PHASE 3 起点
 
 ---
 

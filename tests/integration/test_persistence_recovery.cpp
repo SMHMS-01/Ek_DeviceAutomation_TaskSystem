@@ -2,6 +2,7 @@
 #include "application/WorkflowManager.h"
 #include "domain/TaskGraph.h"
 #include "infrastructure/EventBus.h"
+#include "infrastructure/SchemaMigration.h"
 #include "infrastructure/SqliteDatabase.h"
 #include "scheduler/SimpleScheduler.h"
 
@@ -21,6 +22,30 @@ int main()
 
     SqliteDatabase db;
     assert(db.open(db_path));
+
+    MigrationRunner migration_runner(db);
+    assert(migration_runner.apply({SchemaMigration{
+        100,
+        "probe_success",
+        {"CREATE TABLE IF NOT EXISTS migration_probe (id TEXT PRIMARY KEY) STRICT"}}}));
+    assert(migration_runner.apply({SchemaMigration{
+        100,
+        "probe_success",
+        {"CREATE TABLE IF NOT EXISTS migration_probe (id TEXT PRIMARY KEY) STRICT"}}}));
+    auto probe_migrations =
+        db.query("SELECT version FROM schema_migrations WHERE version = 100");
+    assert(probe_migrations.size() == 1);
+
+    const bool failed_migration = migration_runner.apply({SchemaMigration{
+        101,
+        "probe_failure",
+        {"CREATE TABLE migration_failure_probe (id TEXT PRIMARY KEY) STRICT",
+         "THIS IS NOT VALID SQL"}}});
+    assert(!failed_migration);
+    assert(db.query("SELECT version FROM schema_migrations WHERE version = 101").empty());
+    assert(db.query("SELECT name FROM sqlite_master WHERE type = 'table' AND "
+                    "name = 'migration_failure_probe'")
+               .empty());
 
     EventBus bus;
     SimpleScheduler scheduler(db, bus);

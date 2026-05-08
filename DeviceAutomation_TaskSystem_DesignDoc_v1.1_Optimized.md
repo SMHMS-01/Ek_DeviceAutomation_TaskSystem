@@ -26,6 +26,8 @@
 
 当前映射：`PHASE 2.1 Persistence Recovery` 属于原始设计第 7 节“审计日志与持久化”和第 11 节“健康监控与看门狗”的恢复前置能力，也受第 14 节开源库选型约束。
 
+当前状态：`PHASE 2.1 Persistence Recovery` 已完成，可作为 `PHASE 3 Scheduler & Executors` 的持久化/审计基础。
+
 ## 2. 当前可交付范围
 
 ### 2.1 Domain Layer
@@ -39,6 +41,7 @@
 
 - `EventBus`：线程安全发布订阅，回调异常隔离
 - `SqliteDatabase`：SQLite 可用时真实执行 SQL、查询和事务；否则保留 mock fallback
+- `MigrationRunner`：按版本幂等应用 schema migration，失败时回滚
 - `Logger`：spdlog 可选，不存在时使用标准错误输出
 
 ### 2.3 Scheduler Layer
@@ -62,6 +65,7 @@
 | SimpleScheduler | 驱动依赖、执行 handler、记录审计 | 不实现真实线程池和设备协议 |
 | EventBus | 模块间事件广播 | 不保证全局顺序；顺序由审计时间和后续 sequence 字段承担 |
 | SqliteDatabase | 执行 schema、状态/审计 SQL、查询和事务 | 当前不提供 prepared statement/repository 抽象 |
+| MigrationRunner | 管理 schema_migrations、幂等应用、失败回滚 | 当前不提供降级 migration |
 | WorkflowManager | 应用层提交与运行入口 | 当前不包含权限、人工干预和恢复编排 |
 | AuditService | 审计查询、状态重放、基础恢复 | 当前恢复策略固定为 Running -> Paused |
 
@@ -81,7 +85,7 @@ ctest --test-dir build --output-on-failure
 |------|--------|
 | `Phase1_2_Standalone` | 基础类型与 FSM 转换 |
 | `AcceptanceWorkflow` | `load sample -> measure sample -> archive result` 完整 DAG 执行，9 条状态转换审计，事件数量与审计数量一致 |
-| `PersistenceRecovery` | SQLite 查询、事务 commit/rollback、task/workflow 审计查询、状态重放、Running 任务恢复 |
+| `PersistenceRecovery` | SQLite 查询、事务 commit/rollback、migration 幂等/失败回滚、task/workflow 审计查询、状态重放、Running 任务恢复 |
 
 ## 4.1 开源库复用策略
 

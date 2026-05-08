@@ -1,6 +1,7 @@
 #include "SimpleScheduler.h"
 
 #include "domain/TaskStateMachine.h"
+#include "infrastructure/SchemaMigration.h"
 
 #include <sstream>
 
@@ -37,21 +38,16 @@ SimpleScheduler::SimpleScheduler(device_automation::infrastructure::IDatabase& d
 
 void SimpleScheduler::initialize_storage()
 {
-    const bool transaction_started = db_.begin_transaction();
-    db_.execute("CREATE TABLE IF NOT EXISTS schema_migrations ("
-                "version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at INTEGER NOT NULL) STRICT");
-    db_.execute("CREATE TABLE IF NOT EXISTS tasks ("
-                "id TEXT PRIMARY KEY, workflow_id TEXT NOT NULL, name TEXT, state TEXT NOT NULL, "
-                "priority INTEGER, retry_count INTEGER DEFAULT 0, error_message TEXT)");
-    db_.execute("CREATE TABLE IF NOT EXISTS audit_events ("
-                "id TEXT PRIMARY KEY, type TEXT NOT NULL, task_id TEXT, workflow_id TEXT, actor TEXT, "
-                "before_state TEXT, after_state TEXT, reason TEXT, occurred_at INTEGER NOT NULL) STRICT");
-    db_.execute("INSERT OR IGNORE INTO schema_migrations(version, name, applied_at) VALUES("
-                "1, 'core_tasks_and_audit', " +
-                std::to_string(Timestamp::now().millis()) + ")");
-    if (transaction_started) {
-        db_.commit_transaction();
-    }
+    device_automation::infrastructure::MigrationRunner runner(db_);
+    runner.apply({device_automation::infrastructure::SchemaMigration{
+        1,
+        "core_tasks_and_audit",
+        {"CREATE TABLE IF NOT EXISTS tasks ("
+         "id TEXT PRIMARY KEY, workflow_id TEXT NOT NULL, name TEXT, state TEXT NOT NULL, "
+         "priority INTEGER, retry_count INTEGER DEFAULT 0, error_message TEXT)",
+         "CREATE TABLE IF NOT EXISTS audit_events ("
+         "id TEXT PRIMARY KEY, type TEXT NOT NULL, task_id TEXT, workflow_id TEXT, actor TEXT, "
+         "before_state TEXT, after_state TEXT, reason TEXT, occurred_at INTEGER NOT NULL) STRICT"}}});
 }
 
 bool SimpleScheduler::run(device_automation::domain::TaskGraph& graph, TaskHandler handler)

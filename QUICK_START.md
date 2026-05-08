@@ -50,14 +50,13 @@ git tag v1.1.0-core-scaffold
 git push origin v1.1.0-core-scaffold
 ```
 
-`main` 保持稳定发布分支；`develop` 作为开发集成分支。当前不建议直接合并 `main`，等 DEV PHASE 2.1 的数据库查询和恢复验收完成后再准备 release 分支。
+`main` 保持稳定发布分支；`develop` 作为开发集成分支。PHASE 2.1 已完成，当前可从 `develop` 进入 PHASE 3；合并 `main` 仍建议等 PHASE 3 的执行器主干验收后再准备 release 分支。
 
 ## 下一阶段
 
-DEV PHASE 2.1 — Persistence Recovery 已完成 MVP，下一步继续加固：
+PHASE 2.1 — Persistence Recovery 已完成，可进入 PHASE 3。后续非阻塞加固项：
 
-1. 增加显式事务 helper
-2. 增加可演进 migration runner
-3. 扩展 workflow 维度审计查询
-4. 增加更细的恢复策略：Paused / WaitingForHuman / Rollback
-5. 增加故障注入型恢复验收
+1. 增加 prepared statement 或 repository 层，减少手写 SQL。
+2. 增加更细的恢复策略：Paused / WaitingForHuman / Rollback。
+3. 增加故障注入型恢复验收。
+4. PHASE 3 优先评估 Taskflow、BS::thread_pool、eventpp，避免重复造轮子。

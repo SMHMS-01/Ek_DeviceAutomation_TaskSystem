@@ -22,7 +22,7 @@
 | 远程仓库 | `origin=https://github.com/SMHMS-01/Ek_DeviceAutomation_TaskSystem.git` |
 | 远程跟踪 | `main` 已跟踪；`develop` 尚未建立 upstream |
 | 最新设计基线 | v1.1 Optimized |
-| 当前开发阶段 | PHASE 2.1：Persistence Recovery 开发中 |
+| 当前开发阶段 | PHASE 2.1：Persistence Recovery 完成，准备进入 PHASE 3 |
 | 当前验收结果 | `ctest --test-dir build --output-on-failure` 通过，3/3 |
 | 本地提交 | `feat: implement v1.1 core workflow scaffold`，当前 HEAD |
 | 本地标签 | `v1.1.0-core-scaffold` |
@@ -66,7 +66,7 @@
 
 目标：建立可运行的基础设施主干。
 
-状态：PHASE 2.1 开发中
+状态：PHASE 2.1 完成，保留非阻塞隐患进入 PHASE 3 台账
 
 已完成：
 - Logger fallback
@@ -76,12 +76,12 @@
 - IDevice/MockDevice 基础接口
 - DB 查询 API
 - 事务接口
-- 基础 schema migration 记录
+- 可演进 migration runner
+- migration 幂等执行和失败回滚验收
 - task/workflow 审计查询
 - Running 任务恢复为 Paused
 
 遗留：
-- 完整 migration runner
 - MockDevice 故障注入
 - WatchDog 实现
 - PluginLoader 实现
@@ -142,17 +142,20 @@
 
 目标：让系统不仅能写入审计，还能查询、恢复、验证落库状态。
 
+状态：完成，可进入 PHASE 3。
+
 执行队列：
 
 1. 扩展 `IDatabase`
    - 已完成：增加 query API
    - 已完成：增加事务 helper
-   - 已完成：增加基础 schema migration 入口
+   - 已完成：增加 schema migration runner
 
 2. 扩展 `SqliteDatabase`
    - 已完成：支持 `SELECT` 返回行集合
    - 已完成：schema 初始化加 `schema_migrations`
    - 已完成：audit_events/tasks 查询测试
+   - 已完成：transaction commit/rollback 验收
 
 3. 增加 `AuditService`
    - 已完成：查询 task 审计流
@@ -169,6 +172,23 @@
    - 已完成：审计落库查询
    - 已完成：状态重放
    - 已完成：模拟崩溃恢复
+   - 已完成：migration 幂等和失败回滚
+
+### 下一阶段：PHASE 3 — Scheduler & Executors
+
+进入条件：
+
+- PHASE 2.1 验收命令全部通过
+- 非阻塞隐患已记录到 `RISK_REGISTER.md`
+- 持久化恢复能力可供 PHASE 3 调度器/执行器使用
+
+首批任务：
+
+1. 设计 `IExecutor` 接口和执行结果协议。
+2. 引入 ExecutorPool，优先评估 `BS::thread_pool`，避免手写线程池。
+3. 抽象 `SchedulingPolicy`，为 PriorityFirst 和 DeviceAffinity 留扩展点。
+4. 评估 `Taskflow` 是否作为完整 DAG 编排引擎，SimpleScheduler 保留为 MVP/测试适配层。
+5. 增加执行器集成测试：成功、失败、重试、取消、设备串行执行。
 
 验收命令：
 
@@ -222,4 +242,4 @@ git push origin v1.1.0-core-scaffold
 
 **文档版本**：v1.1  
 **最后更新**：2026-05-08  
-**当前阶段**：PHASE 2.1 开发中，已完成查询、事务、审计重放和基础恢复闭环
+**当前阶段**：PHASE 2.1 完成，下一步进入 PHASE 3 Scheduler & Executors
