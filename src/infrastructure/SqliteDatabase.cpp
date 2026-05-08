@@ -10,6 +10,25 @@
 
 namespace device_automation::infrastructure {
 
+namespace {
+
+#ifdef USE_SQLITE3
+bool execute_sql(sqlite3* db, const std::string& sql)
+{
+    char* err = nullptr;
+    int rc = sqlite3_exec(db, sql.c_str(), nullptr, nullptr, &err);
+    if (rc != SQLITE_OK) {
+        std::string e = err ? err : "unknown";
+        sqlite3_free(err);
+        Logger::log(Logger::Level::Error, "sqlite3_exec failed: " + e);
+        return false;
+    }
+    return true;
+}
+#endif
+
+} // namespace
+
 SqliteDatabase::~SqliteDatabase()
 {
     close();
@@ -59,15 +78,7 @@ bool SqliteDatabase::execute(const std::string& sql)
         Logger::log(Logger::Level::Error, "execute() called on unopened DB");
         return false;
     }
-    char* err = nullptr;
-    int rc = sqlite3_exec(db_, sql.c_str(), nullptr, nullptr, &err);
-    if (rc != SQLITE_OK) {
-        std::string e = err ? err : "unknown";
-        sqlite3_free(err);
-        Logger::log(Logger::Level::Error, "sqlite3_exec failed: " + e);
-        return false;
-    }
-    return true;
+    return execute_sql(db_, sql);
 #else
     if (!opened_) {
         Logger::log(Logger::Level::Error, "execute() called on unopened mock DB");
@@ -112,6 +123,63 @@ QueryResult SqliteDatabase::query(const std::string& sql)
     (void)sql;
 #endif
     return rows;
+}
+
+bool SqliteDatabase::begin_transaction()
+{
+    std::lock_guard<std::mutex> lk(mu_);
+#ifdef USE_SQLITE3
+    if (!db_) {
+        Logger::log(Logger::Level::Error, "begin_transaction() called on unopened DB");
+        return false;
+    }
+    return execute_sql(db_, "BEGIN IMMEDIATE");
+#else
+    if (!opened_ || in_transaction_) {
+        return false;
+    }
+    in_transaction_ = true;
+    executed_sql_.push_back("BEGIN IMMEDIATE");
+    return true;
+#endif
+}
+
+bool SqliteDatabase::commit_transaction()
+{
+    std::lock_guard<std::mutex> lk(mu_);
+#ifdef USE_SQLITE3
+    if (!db_) {
+        Logger::log(Logger::Level::Error, "commit_transaction() called on unopened DB");
+        return false;
+    }
+    return execute_sql(db_, "COMMIT");
+#else
+    if (!opened_ || !in_transaction_) {
+        return false;
+    }
+    in_transaction_ = false;
+    executed_sql_.push_back("COMMIT");
+    return true;
+#endif
+}
+
+bool SqliteDatabase::rollback_transaction()
+{
+    std::lock_guard<std::mutex> lk(mu_);
+#ifdef USE_SQLITE3
+    if (!db_) {
+        Logger::log(Logger::Level::Error, "rollback_transaction() called on unopened DB");
+        return false;
+    }
+    return execute_sql(db_, "ROLLBACK");
+#else
+    if (!opened_ || !in_transaction_) {
+        return false;
+    }
+    in_transaction_ = false;
+    executed_sql_.push_back("ROLLBACK");
+    return true;
+#endif
 }
 
 } // namespace device_automation::infrastructure

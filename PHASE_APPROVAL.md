@@ -1,6 +1,6 @@
 # Device Automation Task System — 阶段验收与审批表 v1.1
 
-> 用途：这是测试验证、审批和风险台账。执行计划写在 `MASTER_ROADMAP.md`，架构设计写在设计书。
+> 用途：这是测试验证和审批表。执行计划写在 `MASTER_ROADMAP.md`，架构设计写在设计书，条件通过隐患写在 `RISK_REGISTER.md`。
 
 ## 1. 审批规则
 
@@ -17,8 +17,17 @@
 | 状态 | 含义 |
 |------|------|
 | 通过 | 可进入下一阶段 |
-| 条件通过 | 可进入下一阶段，但必须跟踪遗留项 |
+| 条件通过 | 可进入下一阶段，但必须在 `RISK_REGISTER.md` 跟踪遗留项 |
 | 不通过 | 阻塞，必须修复后重审 |
+
+## 1.1 阶段标志对应关系
+
+| 标志 | 对应文档 | 说明 |
+|------|----------|------|
+| PHASE N | `MASTER_ROADMAP.md` / 本文档 | 顶层阶段，例如 PHASE 2 = Infrastructure Core |
+| PHASE N.M | `MASTER_ROADMAP.md` / 本文档 | 阶段内开发切片，例如 PHASE 2.1 = Persistence Recovery |
+| Risk ID | `RISK_REGISTER.md` | 条件通过隐患编号 |
+| Design Section | 设计书 | 架构来源章节，例如第 14 节开源库选型 |
 
 ## 2. 当前阶段汇总
 
@@ -26,7 +35,7 @@
 |------|------|------|------|
 | Phase 0 | 文档职责整理 | 完成 | 通过 |
 | Phase 1 | Domain Core | 基本完成 | 条件通过 |
-| Phase 2 | Infrastructure Core | Persistence MVP 完成 | 条件通过 |
+| Phase 2 | Infrastructure Core | PHASE 2.1 开发中 | 条件通过，隐患入台账 |
 | Phase 3 | Scheduler MVP | MVP 完成 | 条件通过 |
 | Phase 4 | Application MVP | MVP 完成 | 条件通过 |
 | Phase 5 | Fault Tolerance | 未开始 | 未审批 |
@@ -124,12 +133,7 @@ ctest --test-dir build --output-on-failure
 2/2 tests passed
 ```
 
-遗留风险：
-
-- `IDatabase` 还没有 query API，无法直接断言落库内容。
-- SQLite migration 尚未实现。
-- EventBus 当前为同步发布，后续需要异步分发和背压策略。
-- WatchDog、PluginLoader 仍是接口/占位。
+遗留风险：见 `RISK_REGISTER.md` 的 R-003、R-004、R-005、R-006、R-011。
 
 审批结论：条件通过
 
@@ -187,10 +191,7 @@ AcceptanceWorkflow passed
 
 遗留风险：
 
-- ManualInterventionService 尚未实现。
-- AuditService 尚未实现。
-- HealthMonitor 尚未实现。
-- 权限、审批、二次确认尚未实现。
+遗留风险：见 `RISK_REGISTER.md` 的 R-009、R-010、R-011。
 
 审批结论：条件通过
 
@@ -200,6 +201,7 @@ AcceptanceWorkflow passed
 
 - `src/infrastructure/IDatabase.h` query API
 - `src/infrastructure/SqliteDatabase.h/.cpp` query implementation
+- `src/infrastructure/IDatabase.h` transaction API
 - `src/application/AuditService.h/.cpp`
 - `tests/integration/test_persistence_recovery.cpp`
 
@@ -210,9 +212,11 @@ AcceptanceWorkflow passed
 | SQLite SELECT 查询返回行集合 | 通过 |
 | schema_migrations 初始化 | 通过 |
 | 按 task_id 查询审计事件 | 通过 |
+| 按 workflow_id 查询审计事件 | 通过 |
 | 按审计事件重放任务最终状态 | 通过 |
 | 扫描 Running 任务并恢复为 Paused | 通过 |
 | 写入 SystemRecovered 审计事件 | 通过 |
+| SQLite transaction commit/rollback | 通过 |
 
 测试证据：
 
@@ -229,12 +233,7 @@ python3 scripts/check_includes.py
 include rules pass
 ```
 
-遗留风险：
-
-- 恢复策略当前固定为 `Running -> Paused`，后续需按任务类型/设备安全态决定是否进入 `WaitingForHuman`。
-- `IDatabase` 仍缺少显式 transaction helper。
-- migration 当前只有 version=1 的基础记录，还没有可演进 migration runner。
-- `AuditService` 当前支持 task 维度查询，workflow 维度查询待补。
+遗留风险：见 `RISK_REGISTER.md` 的 R-003、R-004、R-009。
 
 审批结论：条件通过
 

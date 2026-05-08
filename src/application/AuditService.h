@@ -25,6 +25,7 @@ public:
     explicit AuditService(device_automation::infrastructure::IDatabase& db);
 
     std::vector<AuditEntry> events_for_task(const std::string& task_id);
+    std::vector<AuditEntry> events_for_workflow(const std::string& workflow_id);
     std::string replay_task_state(const std::string& task_id);
     int recover_running_tasks();
 

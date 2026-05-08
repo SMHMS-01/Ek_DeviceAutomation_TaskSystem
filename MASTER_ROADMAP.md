@@ -1,6 +1,18 @@
 # Device Automation Task System — 作战书 v1.1
 
-> 用途：这是执行计划，不是架构设计书。架构细节以 `DeviceAutomation_TaskSystem_DesignDoc.md` 和 `DeviceAutomation_TaskSystem_DesignDoc_v1.1_Optimized.md` 为准；验收证据以 `PHASE_APPROVAL.md` 为准。
+> 用途：这是执行计划，不是架构设计书。架构细节以 `DeviceAutomation_TaskSystem_DesignDoc.md` 和 `DeviceAutomation_TaskSystem_DesignDoc_v1.1_Optimized.md` 为准；验收证据以 `PHASE_APPROVAL.md` 为准；条件通过隐患以 `RISK_REGISTER.md` 为准。
+
+## 0. 文档标志对应关系
+
+| 标志 | 所属文档 | 含义 | 对应关系 |
+|------|----------|------|----------|
+| Design Section | `DeviceAutomation_TaskSystem_DesignDoc.md` | 原始架构章节 | 例如第 7 节对应持久化，第 14 节对应开源库选型 |
+| Optimized Design v1.1 | `DeviceAutomation_TaskSystem_DesignDoc_v1.1_Optimized.md` | 工程化后的设计基线 | 将原始设计映射为可交付 MVP 和后续路线 |
+| DEV PHASE | `MASTER_ROADMAP.md` | 作战执行阶段 | 与 PHASE 审批阶段同号，允许细分如 `PHASE 2.1` |
+| Approval Phase | `PHASE_APPROVAL.md` | 验收和审批阶段 | 记录测试证据、审批结论和准入状态 |
+| Risk ID | `RISK_REGISTER.md` | 条件通过隐患 | 记录位置、功能、影响、建议和关闭条件 |
+
+阶段命名规则：`PHASE 2.1` 表示 Design/Approval 的 `PHASE 2 Infrastructure Core` 下的第 1 个开发切片 `Persistence Recovery`。作战书、审批表和隐患台账必须使用同一阶段编号。
 
 ## 1. 当前态势
 
@@ -10,7 +22,7 @@
 | 远程仓库 | `origin=https://github.com/SMHMS-01/Ek_DeviceAutomation_TaskSystem.git` |
 | 远程跟踪 | `main` 已跟踪；`develop` 尚未建立 upstream |
 | 最新设计基线 | v1.1 Optimized |
-| 当前开发阶段 | DEV PHASE 2.1：Persistence Recovery MVP |
+| 当前开发阶段 | PHASE 2.1：Persistence Recovery 开发中 |
 | 当前验收结果 | `ctest --test-dir build --output-on-failure` 通过，3/3 |
 | 本地提交 | `feat: implement v1.1 core workflow scaffold`，当前 HEAD |
 | 本地标签 | `v1.1.0-core-scaffold` |
@@ -54,7 +66,7 @@
 
 目标：建立可运行的基础设施主干。
 
-状态：部分完成
+状态：PHASE 2.1 开发中
 
 已完成：
 - Logger fallback
@@ -62,11 +74,14 @@
 - IDatabase
 - SqliteDatabase
 - IDevice/MockDevice 基础接口
+- DB 查询 API
+- 事务接口
+- 基础 schema migration 记录
+- task/workflow 审计查询
+- Running 任务恢复为 Paused
 
 遗留：
-- DB 查询 API
-- 事务封装
-- 数据库 migration 版本表
+- 完整 migration runner
 - MockDevice 故障注入
 - WatchDog 实现
 - PluginLoader 实现
@@ -123,7 +138,7 @@
 
 ## 3. 下一阶段作战目标
 
-### 当前阶段：DEV PHASE 2.1 — Persistence Recovery
+### 当前阶段：PHASE 2.1 — Persistence Recovery
 
 目标：让系统不仅能写入审计，还能查询、恢复、验证落库状态。
 
@@ -131,7 +146,7 @@
 
 1. 扩展 `IDatabase`
    - 已完成：增加 query API
-   - 待完成：增加事务 helper
+   - 已完成：增加事务 helper
    - 已完成：增加基础 schema migration 入口
 
 2. 扩展 `SqliteDatabase`
@@ -141,6 +156,7 @@
 
 3. 增加 `AuditService`
    - 已完成：查询 task 审计流
+   - 已完成：查询 workflow 审计流
    - 已完成：按事件重放任务状态
    - 已完成：验证状态重建结果与 tasks 表一致
 
@@ -199,9 +215,11 @@ git push origin v1.1.0-core-scaffold
 - 设计细节进入设计书，不塞进作战书。
 - 构建产物不放根目录；历史二进制统一放 `弃用资料/` 或从版本库删除。
 - 每个阶段必须有可运行验收命令，不能只写“已完成”。
+- 条件通过的隐患进入 `RISK_REGISTER.md`，不得只散落在聊天或备注里。
+- 设计文档第 14 节已有成熟开源库选型；进入完整实现前必须先评估复用，MVP 手写实现必须标明后续替换点。
 
 ---
 
 **文档版本**：v1.1  
 **最后更新**：2026-05-08  
-**当前阶段**：DEV PHASE 2.1 MVP 完成，准备扩展事务、迁移和恢复策略
+**当前阶段**：PHASE 2.1 开发中，已完成查询、事务、审计重放和基础恢复闭环

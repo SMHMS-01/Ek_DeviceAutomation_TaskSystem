@@ -37,6 +37,7 @@ SimpleScheduler::SimpleScheduler(device_automation::infrastructure::IDatabase& d
 
 void SimpleScheduler::initialize_storage()
 {
+    const bool transaction_started = db_.begin_transaction();
     db_.execute("CREATE TABLE IF NOT EXISTS schema_migrations ("
                 "version INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at INTEGER NOT NULL) STRICT");
     db_.execute("CREATE TABLE IF NOT EXISTS tasks ("
@@ -48,6 +49,9 @@ void SimpleScheduler::initialize_storage()
     db_.execute("INSERT OR IGNORE INTO schema_migrations(version, name, applied_at) VALUES("
                 "1, 'core_tasks_and_audit', " +
                 std::to_string(Timestamp::now().millis()) + ")");
+    if (transaction_started) {
+        db_.commit_transaction();
+    }
 }
 
 bool SimpleScheduler::run(device_automation::domain::TaskGraph& graph, TaskHandler handler)

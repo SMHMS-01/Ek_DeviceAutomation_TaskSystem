@@ -14,6 +14,18 @@
 | 缺少验收标准 | 开发完成难以判断 | 增加 ctest 验收：独立 FSM 测试 + 完整工作流验收 |
 | 外部库依赖不确定 | 在无 GTest/spdlog 环境中不可构建 | 保留 fallback logger 和 standalone tests，SQLite 可用时启用真实 DB |
 
+## 1.1 文档与阶段标志对应关系
+
+| 标志 | 文档 | 说明 |
+|------|------|------|
+| 原始设计章节 | `DeviceAutomation_TaskSystem_DesignDoc.md` | 系统级架构来源；第 14 节为开源库选型基线 |
+| 优化设计章节 | 本文档 | 将原始设计收敛成可交付工程切片 |
+| PHASE N / PHASE N.M | `MASTER_ROADMAP.md` | 作战执行阶段；`N.M` 是 `N` 阶段下的开发切片 |
+| Approval Phase | `PHASE_APPROVAL.md` | 对应 PHASE 的测试证据和审批结论 |
+| Risk ID | `RISK_REGISTER.md` | 条件通过时的隐患追踪编号 |
+
+当前映射：`PHASE 2.1 Persistence Recovery` 属于原始设计第 7 节“审计日志与持久化”和第 11 节“健康监控与看门狗”的恢复前置能力，也受第 14 节开源库选型约束。
+
 ## 2. 当前可交付范围
 
 ### 2.1 Domain Layer
@@ -26,7 +38,7 @@
 ### 2.2 Infrastructure Layer
 
 - `EventBus`：线程安全发布订阅，回调异常隔离
-- `SqliteDatabase`：SQLite 可用时真实执行 SQL；否则保留 mock fallback
+- `SqliteDatabase`：SQLite 可用时真实执行 SQL、查询和事务；否则保留 mock fallback
 - `Logger`：spdlog 可选，不存在时使用标准错误输出
 
 ### 2.3 Scheduler Layer
@@ -39,6 +51,7 @@
 ### 2.4 Application Layer
 
 - `WorkflowManager`：应用服务入口，负责提交工作流并委托 Scheduler 执行
+- `AuditService`：按 task/workflow 查询审计流，支持任务状态重放和 Running 任务恢复为 Paused
 
 ## 3. 模块职责边界
 
@@ -48,8 +61,9 @@
 | TaskStateMachine | 校验状态转换是否合法 | 不决定何时转换 |
 | SimpleScheduler | 驱动依赖、执行 handler、记录审计 | 不实现真实线程池和设备协议 |
 | EventBus | 模块间事件广播 | 不保证全局顺序；顺序由审计时间和后续 sequence 字段承担 |
-| SqliteDatabase | 执行 schema 与状态/审计 SQL | 当前不提供查询 API |
+| SqliteDatabase | 执行 schema、状态/审计 SQL、查询和事务 | 当前不提供 prepared statement/repository 抽象 |
 | WorkflowManager | 应用层提交与运行入口 | 当前不包含权限、人工干预和恢复编排 |
+| AuditService | 审计查询、状态重放、基础恢复 | 当前恢复策略固定为 Running -> Paused |
 
 ## 4. 验收流程
 
@@ -67,6 +81,20 @@ ctest --test-dir build --output-on-failure
 |------|--------|
 | `Phase1_2_Standalone` | 基础类型与 FSM 转换 |
 | `AcceptanceWorkflow` | `load sample -> measure sample -> archive result` 完整 DAG 执行，9 条状态转换审计，事件数量与审计数量一致 |
+| `PersistenceRecovery` | SQLite 查询、事务 commit/rollback、task/workflow 审计查询、状态重放、Running 任务恢复 |
+
+## 4.1 开源库复用策略
+
+原始设计第 14 节给出的开源库选型继续有效。v1.1 允许为缩小 MVP 范围保留轻量手写实现，但进入完整阶段前按以下规则复核：
+
+| 能力 | 优先复用 | 当前处理 |
+|------|----------|----------|
+| DAG 编排 | Taskflow | SimpleScheduler 为 MVP，PHASE 3 前评估迁移或适配 |
+| 状态机 | Boost.SML | 当前 FSM 手写，状态复杂度上升前评估 Boost.SML |
+| 线程池 | BS::thread_pool | ExecutorPool 阶段优先评估 |
+| 事件总线 | eventpp | 当前 EventBus 同步 MVP，高吞吐和过滤需求出现时评估替换 |
+| SQLite 封装 | SQLiteCpp | 当前 sqlite3 C API 足够验证；查询和事务复杂化后评估 SQLiteCpp |
+| 日志 | spdlog | 已可选集成，缺失时 fallback |
 
 ## 5. 下一阶段路线
 

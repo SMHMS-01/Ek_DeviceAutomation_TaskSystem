@@ -44,6 +44,7 @@ int main()
     assert(audit.replay_task_state(prepare_id.to_string()) == "Completed");
     assert(audit.replay_task_state(analyze_id.to_string()) == "Completed");
     assert(audit.events_for_task(prepare_id.to_string()).size() == 3);
+    assert(audit.events_for_workflow(graph.id.to_string()).size() == 6);
 
     const auto interrupted_task = TaskId::generate().to_string();
     const auto interrupted_workflow = WorkflowId::generate().to_string();
@@ -62,6 +63,19 @@ int main()
 
     auto migrations = db.query("SELECT version FROM schema_migrations WHERE version = 1");
     assert(migrations.size() == 1);
+
+    assert(db.execute("CREATE TABLE IF NOT EXISTS tx_probe (id TEXT PRIMARY KEY) STRICT"));
+    assert(db.begin_transaction());
+    assert(db.execute("INSERT INTO tx_probe(id) VALUES('rolled_back')"));
+    assert(db.rollback_transaction());
+    auto rolled_back = db.query("SELECT id FROM tx_probe WHERE id = 'rolled_back'");
+    assert(rolled_back.empty());
+
+    assert(db.begin_transaction());
+    assert(db.execute("INSERT INTO tx_probe(id) VALUES('committed')"));
+    assert(db.commit_transaction());
+    auto committed = db.query("SELECT id FROM tx_probe WHERE id = 'committed'");
+    assert(committed.size() == 1);
 
     db.close();
     std::cout << "persistence recovery passed\n";

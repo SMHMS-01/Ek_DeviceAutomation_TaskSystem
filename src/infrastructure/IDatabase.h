@@ -28,6 +28,11 @@ public:
 
     // Execute a SELECT-like query and return stringified rows.
     virtual QueryResult query(const std::string& sql) = 0;
+
+    // Transaction primitives. Implementations should return false if the operation fails.
+    virtual bool begin_transaction() = 0;
+    virtual bool commit_transaction() = 0;
+    virtual bool rollback_transaction() = 0;
 };
 
 } // namespace device_automation::infrastructure

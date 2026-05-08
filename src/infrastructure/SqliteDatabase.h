@@ -24,6 +24,9 @@ public:
     void close() override;
     bool execute(const std::string& sql) override;
     QueryResult query(const std::string& sql) override;
+    bool begin_transaction() override;
+    bool commit_transaction() override;
+    bool rollback_transaction() override;
 
 private:
     std::mutex mu_;
@@ -32,6 +35,7 @@ private:
     sqlite3* db_ = nullptr;
 #else
     bool opened_ = false;
+    bool in_transaction_ = false;
     std::string opened_path_;
     std::vector<std::string> executed_sql_;
 #endif
