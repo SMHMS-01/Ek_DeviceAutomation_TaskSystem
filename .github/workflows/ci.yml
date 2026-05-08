@@ -11,10 +11,10 @@ jobs:
     name: Check Include Rules
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -25,7 +25,7 @@ jobs:
     name: Code Style & Format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install clang-format
         run: |
@@ -42,12 +42,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compiler: [gcc-13, clang-18]
+        compiler: [gcc, clang]
         build_type: [Debug, Release]
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
@@ -56,16 +56,16 @@ jobs:
             build-essential cmake ninja-build \
             libsqlite3-dev nlohmann-json3-dev \
             google-benchmark-dev googletest-dev \
-            clang-format clang-tidy lcov
+            clang clang-format clang-tidy lcov
 
       - name: Select compiler
         run: |
-          if [ "${{ matrix.compiler }}" = "gcc-13" ]; then
-            echo "CC=gcc-13" >> $GITHUB_ENV
-            echo "CXX=g++-13" >> $GITHUB_ENV
+          if [ "${{ matrix.compiler }}" = "gcc" ]; then
+            echo "CC=gcc" >> $GITHUB_ENV
+            echo "CXX=g++" >> $GITHUB_ENV
           else
-            echo "CC=clang-18" >> $GITHUB_ENV
-            echo "CXX=clang++-18" >> $GITHUB_ENV
+            echo "CC=clang" >> $GITHUB_ENV
+            echo "CXX=clang++" >> $GITHUB_ENV
           fi
 
       - name: Configure
@@ -84,29 +84,21 @@ jobs:
       - name: Test
         run: |
           cd build
-          ctest --output-on-failure --verbose || true
+          ctest --output-on-failure --verbose
 
       - name: Generate Coverage
-        if: matrix.compiler == 'gcc-13' && matrix.build_type == 'Debug'
+        if: matrix.compiler == 'gcc' && matrix.build_type == 'Debug'
         run: |
           cd build
           lcov --directory . --capture --output-file coverage.info || true
           lcov --remove coverage.info '/usr/*' '*/third_party/*' --output-file coverage.info || true
           lcov --list coverage.info || true
 
-      - name: Upload Coverage
-        if: matrix.compiler == 'gcc-13' && matrix.build_type == 'Debug'
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./build/coverage.info
-          flags: unittests
-          fail_ci_if_error: false
-
   static-analysis:
     name: Static Analysis
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Install clang-tidy
         run: |
@@ -122,13 +114,15 @@ jobs:
     name: Documentation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Check documentation
         run: |
           # 检查关键文档文件存在
           test -f README.md || (echo "❌ README.md missing"; exit 1)
           test -f MASTER_ROADMAP.md || (echo "❌ MASTER_ROADMAP.md missing"; exit 1)
+          test -f PHASE_APPROVAL.md || (echo "❌ PHASE_APPROVAL.md missing"; exit 1)
+          test -f RISK_REGISTER.md || (echo "❌ RISK_REGISTER.md missing"; exit 1)
           test -f AGENTS.md || (echo "❌ AGENTS.md missing"; exit 1)
           echo "✅ Documentation files present"
 

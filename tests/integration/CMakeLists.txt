@@ -19,3 +19,10 @@ target_link_libraries(test_persistence_recovery
 set_target_properties(test_persistence_recovery PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/tests")
 add_test(NAME PersistenceRecovery COMMAND ${CMAKE_BINARY_DIR}/tests/test_persistence_recovery)
+
+add_test(
+    NAME CliSmoke
+    COMMAND $<TARGET_FILE:device_automation_task_system>
+            ${CMAKE_SOURCE_DIR}/tests/fixtures/sample_workflow_linear.csv
+            /tmp/device_automation_cli_smoke.sqlite
+)

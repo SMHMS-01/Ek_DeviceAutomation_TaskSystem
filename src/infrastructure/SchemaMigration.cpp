@@ -2,17 +2,23 @@
 
 #include "domain/Types.h"
 
-namespace device_automation::infrastructure {
+namespace device_automation::infrastructure
+{
 
-namespace {
+namespace
+{
 
-std::string quote(const std::string& value)
+std::string quote(const std::string &value)
 {
     std::string out = "'";
-    for (char ch : value) {
-        if (ch == '\'') {
+    for (char ch : value)
+    {
+        if (ch == '\'')
+        {
             out += "''";
-        } else {
+        }
+        else
+        {
             out += ch;
         }
     }
@@ -22,22 +28,29 @@ std::string quote(const std::string& value)
 
 } // namespace
 
-MigrationRunner::MigrationRunner(IDatabase& db) : db_(db) {}
-
-bool MigrationRunner::apply(const std::vector<SchemaMigration>& migrations)
+MigrationRunner::MigrationRunner(IDatabase &db) : db_(db)
 {
-    if (!ensure_migration_table()) {
+}
+
+bool MigrationRunner::apply(const std::vector<SchemaMigration> &migrations)
+{
+    if (!ensure_migration_table())
+    {
         return false;
     }
 
-    for (const auto& migration : migrations) {
-        if (migration.version <= 0 || migration.name.empty()) {
+    for (const auto &migration : migrations)
+    {
+        if (migration.version <= 0 || migration.name.empty())
+        {
             return false;
         }
-        if (is_applied(migration.version)) {
+        if (is_applied(migration.version))
+        {
             continue;
         }
-        if (!apply_one(migration)) {
+        if (!apply_one(migration))
+        {
             return false;
         }
     }
@@ -58,26 +71,30 @@ bool MigrationRunner::is_applied(int version)
     return !rows.empty();
 }
 
-bool MigrationRunner::apply_one(const SchemaMigration& migration)
+bool MigrationRunner::apply_one(const SchemaMigration &migration)
 {
-    if (!db_.begin_transaction()) {
+    if (!db_.begin_transaction())
+    {
         return false;
     }
 
-    for (const auto& statement : migration.statements) {
-        if (!db_.execute(statement)) {
+    for (const auto &statement : migration.statements)
+    {
+        if (!db_.execute(statement))
+        {
             db_.rollback_transaction();
             return false;
         }
     }
 
     const auto applied_at = device_automation::domain::Timestamp::now().millis();
-    const bool recorded = db_.execute("INSERT INTO schema_migrations(version, name, applied_at) "
-                                      "VALUES(" +
-                                      std::to_string(migration.version) + ", " +
-                                      quote(migration.name) + ", " + std::to_string(applied_at) +
-                                      ")");
-    if (!recorded) {
+    const bool recorded =
+        db_.execute("INSERT INTO schema_migrations(version, name, applied_at) "
+                    "VALUES(" +
+                    std::to_string(migration.version) + ", " + quote(migration.name) + ", " +
+                    std::to_string(applied_at) + ")");
+    if (!recorded)
+    {
         db_.rollback_transaction();
         return false;
     }

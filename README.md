@@ -71,8 +71,9 @@ The Device Automation Task System is a comprehensive framework designed to autom
 - ✅ Task and TaskGraph implementation with DAG cycle detection
 - ✅ Simple DAG scheduler with SQLite-backed audit writes
 - ✅ AuditService with task audit replay and interrupted task recovery
+- ✅ PHASE 3.1 starter: executor contract, inline executor, CLI smoke program, sample workflow fixture
 - ✅ Thread-safe EventBus and SQLite infrastructure implementation
-- ✅ Standalone and end-to-end acceptance tests
+- ✅ Standalone, end-to-end, persistence recovery, and CLI smoke tests
 
 ## Documentation
 
@@ -138,6 +139,18 @@ ctest --test-dir build --output-on-failure
 ```
 
 Current acceptance includes standalone domain/FSM checks, an end-to-end DAG workflow, and persistence recovery verification.
+
+Run the current smoke main program:
+
+```bash
+./build/bin/device_automation_task_system tests/fixtures/sample_workflow_linear.csv /tmp/device_automation_cli.sqlite
+```
+
+Expected output:
+
+```text
+workflow=cli-sample-workflow state=Completed tasks=3 audits=9
+```
 
 ### For Implementation
 The project is ready for continued development across the following components:

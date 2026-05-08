@@ -1,12 +1,13 @@
 #pragma once
 
+#include "TaskState.h"
+
 #include <stdexcept>
 #include <string>
 #include <vector>
 
-#include "TaskState.h"
-
-namespace device_automation::domain {
+namespace device_automation::domain
+{
 
 /**
  * @brief 任务状态转换异常
@@ -20,18 +21,25 @@ public:
      * @param to 目标状态
      * @param reason 原因（可选）
      */
-    InvalidStateTransitionException(TaskState from, TaskState to, const std::string& reason = "")
+    InvalidStateTransitionException(TaskState from, TaskState to, const std::string &reason = "")
         : std::runtime_error("Invalid state transition: " + state_to_string(from) + " -> " +
                              state_to_string(to) + (reason.empty() ? "" : " (" + reason + ")")),
-          from_state_(from),
-          to_state_(to),
-          reason_(reason)
+          from_state_(from), to_state_(to), reason_(reason)
     {
     }
 
-    TaskState from_state() const { return from_state_; }
-    TaskState to_state() const { return to_state_; }
-    const std::string& reason() const { return reason_; }
+    TaskState from_state() const
+    {
+        return from_state_;
+    }
+    TaskState to_state() const
+    {
+        return to_state_;
+    }
+    const std::string &reason() const
+    {
+        return reason_;
+    }
 
 private:
     TaskState from_state_;
@@ -40,7 +48,8 @@ private:
 
     static std::string state_to_string(TaskState state)
     {
-        switch (state) {
+        switch (state)
+        {
         case TaskState::Pending:
             return "Pending";
         case TaskState::Ready:
@@ -106,14 +115,21 @@ public:
     /**
      * @brief 构造状态机（初始状态为 Pending）
      */
-    TaskStateMachine() : state_(TaskState::Pending) {}
+    TaskStateMachine() : state_(TaskState::Pending)
+    {
+    }
 
-    explicit TaskStateMachine(TaskState initial_state) : state_(initial_state) {}
+    explicit TaskStateMachine(TaskState initial_state) : state_(initial_state)
+    {
+    }
 
     /**
      * @brief 获取当前状态
      */
-    TaskState current_state() const { return state_; }
+    TaskState current_state() const
+    {
+        return state_;
+    }
 
     /**
      * @brief 转换到新状态
@@ -138,7 +154,7 @@ public:
     /**
      * @brief 状态转换为字符串表示
      */
-    static const char* state_to_string(TaskState state);
+    static const char *state_to_string(TaskState state);
 
 private:
     TaskState state_;

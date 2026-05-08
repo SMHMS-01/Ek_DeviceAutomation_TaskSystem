@@ -1,4 +1,5 @@
 add_library(device_automation_scheduler STATIC
+    InlineExecutor.cpp
     SimpleScheduler.cpp
 )
 

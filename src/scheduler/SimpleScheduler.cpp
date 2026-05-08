@@ -5,22 +5,28 @@
 
 #include <sstream>
 
-namespace device_automation::scheduler {
+namespace device_automation::scheduler
+{
 
 using device_automation::domain::Task;
 using device_automation::domain::TaskState;
 using device_automation::domain::TaskStateMachine;
 using device_automation::domain::Timestamp;
 
-namespace {
+namespace
+{
 
-std::string quote(const std::string& value)
+std::string quote(const std::string &value)
 {
     std::string out = "'";
-    for (char ch : value) {
-        if (ch == '\'') {
+    for (char ch : value)
+    {
+        if (ch == '\'')
+        {
             out += "''";
-        } else {
+        }
+        else
+        {
             out += ch;
         }
     }
@@ -30,8 +36,8 @@ std::string quote(const std::string& value)
 
 } // namespace
 
-SimpleScheduler::SimpleScheduler(device_automation::infrastructure::IDatabase& db,
-                                 device_automation::infrastructure::EventBus& event_bus)
+SimpleScheduler::SimpleScheduler(device_automation::infrastructure::IDatabase &db,
+                                 device_automation::infrastructure::EventBus &event_bus)
     : db_(db), event_bus_(event_bus)
 {
 }
@@ -47,29 +53,35 @@ void SimpleScheduler::initialize_storage()
          "priority INTEGER, retry_count INTEGER DEFAULT 0, error_message TEXT)",
          "CREATE TABLE IF NOT EXISTS audit_events ("
          "id TEXT PRIMARY KEY, type TEXT NOT NULL, task_id TEXT, workflow_id TEXT, actor TEXT, "
-         "before_state TEXT, after_state TEXT, reason TEXT, occurred_at INTEGER NOT NULL) STRICT"}}});
+         "before_state TEXT, after_state TEXT, reason TEXT, occurred_at INTEGER NOT NULL) "
+         "STRICT"}}});
 }
 
-bool SimpleScheduler::run(device_automation::domain::TaskGraph& graph, TaskHandler handler)
+bool SimpleScheduler::run(device_automation::domain::TaskGraph &graph, TaskHandler handler)
 {
     graph.state = device_automation::domain::GraphState::Running;
-    while (!graph.all_completed()) {
+    while (!graph.all_completed())
+    {
         auto ready = graph.ready_tasks();
-        if (ready.empty()) {
+        if (ready.empty())
+        {
             graph.state = device_automation::domain::GraphState::Failed;
             return false;
         }
 
-        for (const auto& id : ready) {
-            auto& task = graph.task(id);
+        for (const auto &id : ready)
+        {
+            auto &task = graph.task(id);
             transition(task, TaskState::Ready, "dependencies met");
             transition(task, TaskState::Running, "executor assigned");
             task.started_at = Timestamp::now();
 
             auto result = handler(task);
-            if (result.status == TaskExecutionStatus::Success) {
+            if (result.status == TaskExecutionStatus::Success)
+            {
                 task.finished_at = Timestamp::now();
-                transition(task, TaskState::Completed, result.message.empty() ? "done" : result.message);
+                transition(task, TaskState::Completed,
+                           result.message.empty() ? "done" : result.message);
                 continue;
             }
 
@@ -77,10 +89,14 @@ bool SimpleScheduler::run(device_automation::domain::TaskGraph& graph, TaskHandl
             transition(task, TaskState::Failed, result.message);
             ++task.attempts;
             if (result.status == TaskExecutionStatus::RetryableFailure &&
-                task.retry_policy.auto_retry && task.attempts < task.retry_policy.max_attempts) {
+                task.retry_policy.auto_retry && task.attempts < task.retry_policy.max_attempts)
+            {
                 transition(task, TaskState::Pending, "auto retry");
-            } else {
-                transition(task, TaskState::WaitingForHuman, "retry exhausted or permanent failure");
+            }
+            else
+            {
+                transition(task, TaskState::WaitingForHuman,
+                           "retry exhausted or permanent failure");
                 graph.state = device_automation::domain::GraphState::Failed;
                 return false;
             }
@@ -90,10 +106,11 @@ bool SimpleScheduler::run(device_automation::domain::TaskGraph& graph, TaskHandl
     return true;
 }
 
-void SimpleScheduler::transition(Task& task, TaskState next, const std::string& reason)
+void SimpleScheduler::transition(Task &task, TaskState next, const std::string &reason)
 {
     TaskStateMachine validator(task.state);
-    if (!validator.can_transition_to(next)) {
+    if (!validator.can_transition_to(next))
+    {
         throw device_automation::domain::InvalidStateTransitionException(task.state, next, reason);
     }
 
@@ -112,10 +129,8 @@ void SimpleScheduler::transition(Task& task, TaskState next, const std::string& 
     db_.execute(sql.str());
 }
 
-void SimpleScheduler::record_audit(const Task& task,
-                                   TaskState before,
-                                   TaskState after,
-                                   const std::string& reason)
+void SimpleScheduler::record_audit(const Task &task, TaskState before, TaskState after,
+                                   const std::string &reason)
 {
     AuditRecord record{task.id.to_string(), "TaskStateChanged",
                        TaskStateMachine::state_to_string(before),
@@ -124,7 +139,8 @@ void SimpleScheduler::record_audit(const Task& task,
     event_bus_.publish("task.state_changed", record.task_id + ":" + record.after_state);
 
     std::ostringstream sql;
-    sql << "INSERT INTO audit_events(id, type, task_id, workflow_id, actor, before_state, after_state, "
+    sql << "INSERT INTO audit_events(id, type, task_id, workflow_id, actor, before_state, "
+           "after_state, "
            "reason, occurred_at) VALUES("
         << quote(device_automation::domain::EventId::generate().to_string()) << ", "
         << quote(record.event_type) << ", " << quote(record.task_id) << ", "

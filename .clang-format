@@ -23,7 +23,7 @@ AllowShortBlocksOnASingleLine: Never
 AllowShortCaseLabelsOnASingleLine: false
 
 # 对齐规则
-AlignAfterOpenBracket: AlignAfterOpenBracket
+AlignAfterOpenBracket: Align
 AlignConsecutiveAssignments: false
 AlignConsecutiveDeclarations: false
 AlignOperands: true
@@ -31,7 +31,6 @@ AlignOperands: true
 # Include 分组
 IncludeBlocks: Regroup
 IncludeIsMainRegex: "(Test)?$"
-IncludeSortPragmas: true
 
 # 其他
 ReflowComments: true

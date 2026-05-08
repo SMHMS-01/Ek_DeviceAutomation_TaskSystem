@@ -2,7 +2,8 @@
 
 #include <string>
 
-namespace device_automation::infrastructure {
+namespace device_automation::infrastructure
+{
 
 class IDevice
 {
@@ -11,7 +12,7 @@ public:
 
     virtual bool connect() = 0;
     virtual void disconnect() = 0;
-    virtual bool send(const std::string& payload) = 0;
+    virtual bool send(const std::string &payload) = 0;
     virtual std::string receive() = 0;
 };
 

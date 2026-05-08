@@ -1,0 +1,4 @@
+# key,name,priority,dependencies separated by semicolon
+load,Load sample,High
+measure,Measure sample,Normal,load
+archive,Archive result,Low,measure

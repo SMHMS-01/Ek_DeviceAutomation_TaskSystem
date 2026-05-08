@@ -2,12 +2,14 @@
 
 #include <vector>
 
-namespace device_automation::domain {
+namespace device_automation::domain
+{
 
 // 定义合法的状态转换规则
 static bool is_valid_transition(TaskState from, TaskState to)
 {
-    switch (from) {
+    switch (from)
+    {
     case TaskState::Pending:
         // Pending 可转移到：Ready, Cancelled
         return to == TaskState::Ready || to == TaskState::Cancelled;
@@ -57,7 +59,8 @@ static bool is_valid_transition(TaskState from, TaskState to)
 
 void TaskStateMachine::transition_to(TaskState next_state)
 {
-    if (!is_valid_transition(state_, next_state)) {
+    if (!is_valid_transition(state_, next_state))
+    {
         throw InvalidStateTransitionException(state_, next_state);
     }
     state_ = next_state;
@@ -71,14 +74,16 @@ bool TaskStateMachine::can_transition_to(TaskState next_state) const
 std::vector<TaskState> TaskStateMachine::valid_next_states() const
 {
     std::vector<TaskState> valid_states;
-    std::vector<TaskState> all_states = {TaskState::Pending,     TaskState::Ready,
-                                         TaskState::Running,     TaskState::Paused,
-                                         TaskState::Completed,   TaskState::Failed,
-                                         TaskState::Cancelled,   TaskState::RollingBack,
-                                         TaskState::RolledBack,  TaskState::WaitingForHuman};
+    std::vector<TaskState> all_states = {TaskState::Pending,    TaskState::Ready,
+                                         TaskState::Running,    TaskState::Paused,
+                                         TaskState::Completed,  TaskState::Failed,
+                                         TaskState::Cancelled,  TaskState::RollingBack,
+                                         TaskState::RolledBack, TaskState::WaitingForHuman};
 
-    for (TaskState state : all_states) {
-        if (is_valid_transition(state_, state)) {
+    for (TaskState state : all_states)
+    {
+        if (is_valid_transition(state_, state))
+        {
             valid_states.push_back(state);
         }
     }
@@ -86,9 +91,10 @@ std::vector<TaskState> TaskStateMachine::valid_next_states() const
     return valid_states;
 }
 
-const char* TaskStateMachine::state_to_string(TaskState state)
+const char *TaskStateMachine::state_to_string(TaskState state)
 {
-    switch (state) {
+    switch (state)
+    {
     case TaskState::Pending:
         return "Pending";
     case TaskState::Ready:

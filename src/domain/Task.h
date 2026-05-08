@@ -9,11 +9,17 @@
 #include <string>
 #include <vector>
 
-namespace device_automation::domain {
+namespace device_automation::domain
+{
 
 struct RetryPolicy
 {
-    enum class Backoff { Fixed, Linear, Exponential };
+    enum class Backoff
+    {
+        Fixed,
+        Linear,
+        Exponential
+    };
 
     int max_attempts = 3;
     bool auto_retry = true;

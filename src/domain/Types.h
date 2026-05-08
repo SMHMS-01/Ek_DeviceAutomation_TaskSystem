@@ -1,10 +1,11 @@
 #pragma once
 
+#include <chrono>
 #include <cstdint>
 #include <string>
-#include <chrono>
 
-namespace device_automation::domain {
+namespace device_automation::domain
+{
 
 // ============================================================================
 // 基础类型定义
@@ -22,19 +23,33 @@ public:
      */
     static TaskId generate();
 
-    explicit TaskId(const std::string& uuid = "") : uuid_(uuid) {}
+    explicit TaskId(const std::string &uuid = "") : uuid_(uuid)
+    {
+    }
 
     /**
      * @brief 获取 UUID 字符串
      */
-    const std::string& to_string() const { return uuid_; }
+    const std::string &to_string() const
+    {
+        return uuid_;
+    }
 
     /**
      * @brief 比较两个 TaskId
      */
-    bool operator==(const TaskId& other) const { return uuid_ == other.uuid_; }
-    bool operator!=(const TaskId& other) const { return !(*this == other); }
-    bool operator<(const TaskId& other) const { return uuid_ < other.uuid_; }
+    bool operator==(const TaskId &other) const
+    {
+        return uuid_ == other.uuid_;
+    }
+    bool operator!=(const TaskId &other) const
+    {
+        return !(*this == other);
+    }
+    bool operator<(const TaskId &other) const
+    {
+        return uuid_ < other.uuid_;
+    }
 
 private:
     std::string uuid_;
@@ -48,12 +63,23 @@ class WorkflowId
 public:
     static WorkflowId generate();
 
-    explicit WorkflowId(const std::string& uuid = "") : uuid_(uuid) {}
+    explicit WorkflowId(const std::string &uuid = "") : uuid_(uuid)
+    {
+    }
 
-    const std::string& to_string() const { return uuid_; }
+    const std::string &to_string() const
+    {
+        return uuid_;
+    }
 
-    bool operator==(const WorkflowId& other) const { return uuid_ == other.uuid_; }
-    bool operator!=(const WorkflowId& other) const { return !(*this == other); }
+    bool operator==(const WorkflowId &other) const
+    {
+        return uuid_ == other.uuid_;
+    }
+    bool operator!=(const WorkflowId &other) const
+    {
+        return !(*this == other);
+    }
 
 private:
     std::string uuid_;
@@ -67,13 +93,26 @@ class ExecutorId
 public:
     static ExecutorId generate();
 
-    explicit ExecutorId(const std::string& id = "") : id_(id) {}
-    explicit ExecutorId(int id) : id_(std::to_string(id)) {}
+    explicit ExecutorId(const std::string &id = "") : id_(id)
+    {
+    }
+    explicit ExecutorId(int id) : id_(std::to_string(id))
+    {
+    }
 
-    const std::string& to_string() const { return id_; }
+    const std::string &to_string() const
+    {
+        return id_;
+    }
 
-    bool operator==(const ExecutorId& other) const { return id_ == other.id_; }
-    bool operator!=(const ExecutorId& other) const { return !(*this == other); }
+    bool operator==(const ExecutorId &other) const
+    {
+        return id_ == other.id_;
+    }
+    bool operator!=(const ExecutorId &other) const
+    {
+        return !(*this == other);
+    }
 
 private:
     std::string id_;
@@ -87,13 +126,27 @@ class DeviceId
 public:
     static DeviceId generate();
 
-    explicit DeviceId(const std::string& id = "") : id_(id) {}
+    explicit DeviceId(const std::string &id = "") : id_(id)
+    {
+    }
 
-    const std::string& to_string() const { return id_; }
+    const std::string &to_string() const
+    {
+        return id_;
+    }
 
-    bool operator==(const DeviceId& other) const { return id_ == other.id_; }
-    bool operator!=(const DeviceId& other) const { return !(*this == other); }
-    bool is_empty() const { return id_.empty(); }
+    bool operator==(const DeviceId &other) const
+    {
+        return id_ == other.id_;
+    }
+    bool operator!=(const DeviceId &other) const
+    {
+        return !(*this == other);
+    }
+    bool is_empty() const
+    {
+        return id_.empty();
+    }
 
 private:
     std::string id_;
@@ -107,12 +160,23 @@ class EventId
 public:
     static EventId generate();
 
-    explicit EventId(const std::string& uuid = "") : uuid_(uuid) {}
+    explicit EventId(const std::string &uuid = "") : uuid_(uuid)
+    {
+    }
 
-    const std::string& to_string() const { return uuid_; }
+    const std::string &to_string() const
+    {
+        return uuid_;
+    }
 
-    bool operator==(const EventId& other) const { return uuid_ == other.uuid_; }
-    bool operator!=(const EventId& other) const { return !(*this == other); }
+    bool operator==(const EventId &other) const
+    {
+        return uuid_ == other.uuid_;
+    }
+    bool operator!=(const EventId &other) const
+    {
+        return !(*this == other);
+    }
 
 private:
     std::string uuid_;
@@ -132,43 +196,51 @@ public:
     /**
      * @brief 从毫秒时间戳创建
      */
-    explicit Timestamp(int64_t millis_since_epoch = 0) : millis_since_epoch_(millis_since_epoch) {}
+    explicit Timestamp(int64_t millis_since_epoch = 0) : millis_since_epoch_(millis_since_epoch)
+    {
+    }
 
     /**
      * @brief 获取毫秒级时间戳
      */
-    int64_t millis() const { return millis_since_epoch_; }
+    int64_t millis() const
+    {
+        return millis_since_epoch_;
+    }
 
     /**
      * @brief 获取秒级时间戳
      */
-    int64_t seconds() const { return millis_since_epoch_ / 1000; }
+    int64_t seconds() const
+    {
+        return millis_since_epoch_ / 1000;
+    }
 
     /**
      * @brief 计算与另一个时间戳的差值（毫秒）
      */
-    int64_t duration_since(const Timestamp& other) const
+    int64_t duration_since(const Timestamp &other) const
     {
         return millis_since_epoch_ - other.millis_since_epoch_;
     }
 
-    bool operator==(const Timestamp& other) const
+    bool operator==(const Timestamp &other) const
     {
         return millis_since_epoch_ == other.millis_since_epoch_;
     }
-    bool operator<(const Timestamp& other) const
+    bool operator<(const Timestamp &other) const
     {
         return millis_since_epoch_ < other.millis_since_epoch_;
     }
-    bool operator<=(const Timestamp& other) const
+    bool operator<=(const Timestamp &other) const
     {
         return millis_since_epoch_ <= other.millis_since_epoch_;
     }
-    bool operator>(const Timestamp& other) const
+    bool operator>(const Timestamp &other) const
     {
         return millis_since_epoch_ > other.millis_since_epoch_;
     }
-    bool operator>=(const Timestamp& other) const
+    bool operator>=(const Timestamp &other) const
     {
         return millis_since_epoch_ >= other.millis_since_epoch_;
     }
@@ -179,15 +251,15 @@ private:
 
 } // namespace device_automation::domain
 
-namespace std {
+namespace std
+{
 
 /**
  * @brief TaskId 的哈希函数支持
  */
-template <>
-struct hash<device_automation::domain::TaskId>
+template <> struct hash<device_automation::domain::TaskId>
 {
-    size_t operator()(const device_automation::domain::TaskId& id) const
+    size_t operator()(const device_automation::domain::TaskId &id) const
     {
         return std::hash<std::string>()(id.to_string());
     }
@@ -196,10 +268,9 @@ struct hash<device_automation::domain::TaskId>
 /**
  * @brief WorkflowId 的哈希函数支持
  */
-template <>
-struct hash<device_automation::domain::WorkflowId>
+template <> struct hash<device_automation::domain::WorkflowId>
 {
-    size_t operator()(const device_automation::domain::WorkflowId& id) const
+    size_t operator()(const device_automation::domain::WorkflowId &id) const
     {
         return std::hash<std::string>()(id.to_string());
     }
@@ -208,10 +279,9 @@ struct hash<device_automation::domain::WorkflowId>
 /**
  * @brief ExecutorId 的哈希函数支持
  */
-template <>
-struct hash<device_automation::domain::ExecutorId>
+template <> struct hash<device_automation::domain::ExecutorId>
 {
-    size_t operator()(const device_automation::domain::ExecutorId& id) const
+    size_t operator()(const device_automation::domain::ExecutorId &id) const
     {
         return std::hash<std::string>()(id.to_string());
     }
@@ -220,10 +290,9 @@ struct hash<device_automation::domain::ExecutorId>
 /**
  * @brief DeviceId 的哈希函数支持
  */
-template <>
-struct hash<device_automation::domain::DeviceId>
+template <> struct hash<device_automation::domain::DeviceId>
 {
-    size_t operator()(const device_automation::domain::DeviceId& id) const
+    size_t operator()(const device_automation::domain::DeviceId &id) const
     {
         return std::hash<std::string>()(id.to_string());
     }

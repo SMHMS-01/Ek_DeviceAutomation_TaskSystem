@@ -22,8 +22,8 @@
 | 远程仓库 | `origin=https://github.com/SMHMS-01/Ek_DeviceAutomation_TaskSystem.git` |
 | 远程跟踪 | `main` 已跟踪；`develop` 尚未建立 upstream |
 | 最新设计基线 | v1.1 Optimized |
-| 当前开发阶段 | PHASE 2.1：Persistence Recovery 完成，准备进入 PHASE 3 |
-| 当前验收结果 | `ctest --test-dir build --output-on-failure` 通过，3/3 |
+| 当前开发阶段 | PHASE 3.1：Executor Contract 启动 |
+| 当前验收结果 | Debug/Release `ctest` 均通过，4/4 |
 | 本地提交 | `feat: implement v1.1 core workflow scaffold`，当前 HEAD |
 | 本地标签 | `v1.1.0-core-scaffold` |
 | 远程推送 | 被安全策略拦截，需用户知晓外部数据导出风险后再次明确批准 |
@@ -86,14 +86,18 @@
 - WatchDog 实现
 - PluginLoader 实现
 
-### Phase 3 — Scheduler MVP
+### Phase 3 — Scheduler & Executors
 
-目标：让工作流可以从应用层提交、调度、审计并完成。
+目标：让工作流可以分配给执行器，逐步支持线程池、设备串行执行和调度策略。
 
-状态：MVP 完成
+状态：PHASE 3.1 已启动
 
 已完成：
 - SimpleScheduler
+- IExecutor
+- InlineExecutor
+- 主程序 smoke 入口 `device_automation_task_system`
+- 样例测试数据 `tests/fixtures/sample_workflow_linear.csv`
 - `Pending -> Ready -> Running -> Completed`
 - `Failed -> Pending` 自动重试
 - `Failed -> WaitingForHuman` 人工等待
@@ -174,7 +178,7 @@
    - 已完成：模拟崩溃恢复
    - 已完成：migration 幂等和失败回滚
 
-### 下一阶段：PHASE 3 — Scheduler & Executors
+### 当前阶段：PHASE 3 — Scheduler & Executors
 
 进入条件：
 
@@ -184,11 +188,23 @@
 
 首批任务：
 
-1. 设计 `IExecutor` 接口和执行结果协议。
-2. 引入 ExecutorPool，优先评估 `BS::thread_pool`，避免手写线程池。
-3. 抽象 `SchedulingPolicy`，为 PriorityFirst 和 DeviceAffinity 留扩展点。
-4. 评估 `Taskflow` 是否作为完整 DAG 编排引擎，SimpleScheduler 保留为 MVP/测试适配层。
-5. 增加执行器集成测试：成功、失败、重试、取消、设备串行执行。
+1. 已完成：设计 `IExecutor` 接口和执行结果协议。
+2. 已完成：增加 `InlineExecutor`，作为 PHASE 3 执行器契约 smoke slice。
+3. 已完成：增加可编译主程序 `device_automation_task_system`。
+4. 已完成：准备样例工作流数据 `tests/fixtures/sample_workflow_linear.csv`。
+5. 下一步：引入 ExecutorPool，优先评估 `BS::thread_pool`，避免手写线程池。
+6. 下一步：抽象 `SchedulingPolicy`，为 PriorityFirst 和 DeviceAffinity 留扩展点。
+7. 下一步：评估 `Taskflow` 是否作为完整 DAG 编排引擎，SimpleScheduler 保留为 MVP/测试适配层。
+8. 下一步：增加执行器集成测试：成功、失败、重试、取消、设备串行执行。
+
+主程序当前可用性：
+
+```bash
+cmake --build build
+./build/bin/device_automation_task_system tests/fixtures/sample_workflow_linear.csv /tmp/device_automation_cli.sqlite
+```
+
+当前主程序是 PHASE 3.1 smoke 版本，可编译、可运行、可读取样例 CSV 并完成一条线性工作流；生产可用主程序预计在 PHASE 3.3 完成 ExecutorPool、SchedulingPolicy 和设备串行执行器后进入 beta。
 
 验收命令：
 
@@ -242,4 +258,4 @@ git push origin v1.1.0-core-scaffold
 
 **文档版本**：v1.1  
 **最后更新**：2026-05-08  
-**当前阶段**：PHASE 2.1 完成，下一步进入 PHASE 3 Scheduler & Executors
+**当前阶段**：PHASE 3.1 Executor Contract 已启动，主程序 smoke 版本可编译运行

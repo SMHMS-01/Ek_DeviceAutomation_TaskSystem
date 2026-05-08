@@ -2,7 +2,8 @@
 
 #include <utility>
 
-namespace device_automation::domain {
+namespace device_automation::domain
+{
 
 Task make_atomic_task(std::string name, Priority priority)
 {

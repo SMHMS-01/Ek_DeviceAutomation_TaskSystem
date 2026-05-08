@@ -5,7 +5,8 @@
 #include <string>
 #include <vector>
 
-namespace device_automation::infrastructure {
+namespace device_automation::infrastructure
+{
 
 struct SchemaMigration
 {
@@ -17,16 +18,16 @@ struct SchemaMigration
 class MigrationRunner
 {
 public:
-    explicit MigrationRunner(IDatabase& db);
+    explicit MigrationRunner(IDatabase &db);
 
-    bool apply(const std::vector<SchemaMigration>& migrations);
+    bool apply(const std::vector<SchemaMigration> &migrations);
 
 private:
     bool ensure_migration_table();
     bool is_applied(int version);
-    bool apply_one(const SchemaMigration& migration);
+    bool apply_one(const SchemaMigration &migration);
 
-    IDatabase& db_;
+    IDatabase &db_;
 };
 
 } // namespace device_automation::infrastructure

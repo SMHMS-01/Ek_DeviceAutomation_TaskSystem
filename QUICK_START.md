@@ -7,8 +7,10 @@
 - Domain：Task、TaskGraph、FSM、Priority、ID/时间类型
 - Infrastructure：EventBus、SqliteDatabase、Logger fallback、设备接口基础
 - Scheduler：SimpleScheduler，可按 DAG 推进状态并写审计
+- Executor：IExecutor、InlineExecutor 已作为 PHASE 3.1 启动切片
 - Application：WorkflowManager，作为工作流提交入口；AuditService 可查询审计、重放任务状态并恢复中断任务
-- Acceptance：端到端工作流测试通过
+- Main：`device_automation_task_system` 可编译运行，支持样例 CSV 工作流
+- Acceptance：端到端工作流、持久化恢复、CLI smoke 测试通过
 
 完整执行计划见 [MASTER_ROADMAP.md](MASTER_ROADMAP.md)。  
 测试和审批证据见 [PHASE_APPROVAL.md](PHASE_APPROVAL.md)。  
@@ -28,6 +30,20 @@ ctest --test-dir build --output-on-failure
 Phase1_2_Standalone
 AcceptanceWorkflow
 PersistenceRecovery
+CliSmoke
+```
+
+## 运行主程序
+
+```bash
+cmake --build build
+./build/bin/device_automation_task_system tests/fixtures/sample_workflow_linear.csv /tmp/device_automation_cli.sqlite
+```
+
+预期输出：
+
+```text
+workflow=cli-sample-workflow state=Completed tasks=3 audits=9
 ```
 
 ## 代码规则检查
@@ -54,9 +70,9 @@ git push origin v1.1.0-core-scaffold
 
 ## 下一阶段
 
-PHASE 2.1 — Persistence Recovery 已完成，可进入 PHASE 3。后续非阻塞加固项：
+PHASE 3.1 — Executor Contract 已启动：
 
-1. 增加 prepared statement 或 repository 层，减少手写 SQL。
-2. 增加更细的恢复策略：Paused / WaitingForHuman / Rollback。
-3. 增加故障注入型恢复验收。
-4. PHASE 3 优先评估 Taskflow、BS::thread_pool、eventpp，避免重复造轮子。
+1. 已有 `IExecutor` / `InlineExecutor`。
+2. 已有可编译主程序 `device_automation_task_system`。
+3. 已有样例测试数据 `tests/fixtures/sample_workflow_linear.csv`。
+4. 下一步优先评估 Taskflow、BS::thread_pool、eventpp，避免重复造轮子。

@@ -1,6 +1,7 @@
 #pragma once
 
-namespace device_automation::domain {
+namespace device_automation::domain
+{
 
 /**
  * @brief 任务优先级
@@ -8,11 +9,11 @@ namespace device_automation::domain {
  */
 enum class Priority : int
 {
-    Critical = 0,   ///< 关键任务，应立即执行
-    High = 1,       ///< 高优先级
-    Normal = 2,     ///< 普通优先级（默认）
-    Low = 3,        ///< 低优先级
-    Background = 4  ///< 后台任务
+    Critical = 0,  ///< 关键任务，应立即执行
+    High = 1,      ///< 高优先级
+    Normal = 2,    ///< 普通优先级（默认）
+    Low = 3,       ///< 低优先级
+    Background = 4 ///< 后台任务
 };
 
 /**

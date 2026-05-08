@@ -2,7 +2,8 @@
 
 #include <chrono>
 
-namespace device_automation::infrastructure {
+namespace device_automation::infrastructure
+{
 
 class WatchDog
 {
@@ -10,8 +11,12 @@ public:
     WatchDog() = default;
     ~WatchDog() = default;
 
-    void kick() { last_ = std::chrono::steady_clock::now(); }
-    bool is_stale(std::chrono::milliseconds expiry) const {
+    void kick()
+    {
+        last_ = std::chrono::steady_clock::now();
+    }
+    bool is_stale(std::chrono::milliseconds expiry) const
+    {
         return (std::chrono::steady_clock::now() - last_) > expiry;
     }
 

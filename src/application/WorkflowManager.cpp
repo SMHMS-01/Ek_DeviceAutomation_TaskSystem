@@ -2,14 +2,15 @@
 
 #include <utility>
 
-namespace device_automation::application {
+namespace device_automation::application
+{
 
-WorkflowManager::WorkflowManager(device_automation::scheduler::SimpleScheduler& scheduler)
+WorkflowManager::WorkflowManager(device_automation::scheduler::SimpleScheduler &scheduler)
     : scheduler_(scheduler)
 {
 }
 
-bool WorkflowManager::submit_and_run(device_automation::domain::TaskGraph& graph,
+bool WorkflowManager::submit_and_run(device_automation::domain::TaskGraph &graph,
                                      device_automation::scheduler::TaskHandler handler)
 {
     scheduler_.initialize_storage();

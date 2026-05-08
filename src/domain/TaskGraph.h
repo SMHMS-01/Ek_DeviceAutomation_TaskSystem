@@ -7,12 +7,15 @@
 #include <unordered_map>
 #include <vector>
 
-namespace device_automation::domain {
+namespace device_automation::domain
+{
 
 class TaskGraphException : public std::runtime_error
 {
 public:
-    explicit TaskGraphException(const std::string& message) : std::runtime_error(message) {}
+    explicit TaskGraphException(const std::string &message) : std::runtime_error(message)
+    {
+    }
 };
 
 class TaskGraph
@@ -24,18 +27,21 @@ public:
     GraphState state = GraphState::Created;
 
     void add_task(Task task);
-    void add_dependency(const TaskId& prerequisite, const TaskId& dependent);
+    void add_dependency(const TaskId &prerequisite, const TaskId &dependent);
 
-    bool contains(const TaskId& id) const;
-    Task& task(const TaskId& id);
-    const Task& task(const TaskId& id) const;
+    bool contains(const TaskId &id) const;
+    Task &task(const TaskId &id);
+    const Task &task(const TaskId &id) const;
 
     std::vector<TaskId> topological_sort() const;
     bool has_cycle() const;
     std::vector<TaskId> ready_tasks() const;
     bool all_completed() const;
 
-    const std::unordered_map<TaskId, Task>& tasks() const { return tasks_; }
+    const std::unordered_map<TaskId, Task> &tasks() const
+    {
+        return tasks_;
+    }
 
 private:
     std::unordered_map<TaskId, Task> tasks_;

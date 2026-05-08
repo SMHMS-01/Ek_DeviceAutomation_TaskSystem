@@ -1,12 +1,14 @@
 #include "EventBus.h"
+
 #include "Logger.h"
 
-#include <mutex>
 #include <algorithm>
+#include <mutex>
 
-namespace device_automation::infrastructure {
+namespace device_automation::infrastructure
+{
 
-int EventBus::subscribe(const std::string& key, EventCallback cb)
+int EventBus::subscribe(const std::string &key, EventCallback cb)
 {
     std::lock_guard<std::mutex> lk(mu_);
     int id = next_id_++;
@@ -14,32 +16,44 @@ int EventBus::subscribe(const std::string& key, EventCallback cb)
     return id;
 }
 
-void EventBus::unsubscribe(const std::string& key, int subscription_id)
+void EventBus::unsubscribe(const std::string &key, int subscription_id)
 {
     std::lock_guard<std::mutex> lk(mu_);
     auto it = subs_.find(key);
-    if (it == subs_.end()) return;
+    if (it == subs_.end())
+        return;
     auto &vec = it->second;
-    vec.erase(std::remove_if(vec.begin(), vec.end(), [subscription_id](const EventBus::Subscriber& s){ return s.id == subscription_id; }), vec.end());
+    vec.erase(std::remove_if(vec.begin(), vec.end(),
+                             [subscription_id](const EventBus::Subscriber &s)
+                             { return s.id == subscription_id; }),
+              vec.end());
 }
 
-void EventBus::publish(const std::string& key, const std::string& payload)
+void EventBus::publish(const std::string &key, const std::string &payload)
 {
     std::vector<EventCallback> cbs;
     {
         std::lock_guard<std::mutex> lk(mu_);
         auto it = subs_.find(key);
-        if (it == subs_.end()) return;
+        if (it == subs_.end())
+            return;
         cbs.reserve(it->second.size());
-        for (const auto &s : it->second) cbs.push_back(s.cb);
+        for (const auto &s : it->second)
+            cbs.push_back(s.cb);
     }
 
-    for (auto &cb : cbs) {
-        try {
+    for (auto &cb : cbs)
+    {
+        try
+        {
             cb(payload);
-        } catch (const std::exception &e) {
+        }
+        catch (const std::exception &e)
+        {
             Logger::log(Logger::Level::Error, std::string("EventBus callback error: ") + e.what());
-        } catch (...) {
+        }
+        catch (...)
+        {
             Logger::log(Logger::Level::Error, "EventBus callback unknown error");
         }
     }

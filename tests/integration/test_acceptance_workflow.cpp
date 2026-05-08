@@ -4,9 +4,9 @@
 #include "infrastructure/SqliteDatabase.h"
 #include "scheduler/SimpleScheduler.h"
 
-#include <cassert>
 #include <cstdio>
 #include <iostream>
+#include <stdexcept>
 #include <vector>
 
 using namespace device_automation::domain;
@@ -14,19 +14,31 @@ using namespace device_automation::infrastructure;
 using namespace device_automation::scheduler;
 using namespace device_automation::application;
 
+namespace
+{
+
+void require(bool condition, const char *message)
+{
+    if (!condition)
+    {
+        throw std::runtime_error(message);
+    }
+}
+
+} // namespace
+
 int main()
 {
-    const char* db_path = "/tmp/device_automation_acceptance.sqlite";
+    const char *db_path = "/tmp/device_automation_acceptance.sqlite";
     std::remove(db_path);
 
     SqliteDatabase db;
-    assert(db.open(db_path));
+    require(db.open(db_path), "database must open");
 
     EventBus bus;
     std::vector<std::string> events;
-    bus.subscribe("task.state_changed", [&events](const std::string& payload) {
-        events.push_back(payload);
-    });
+    bus.subscribe("task.state_changed",
+                  [&events](const std::string &payload) { events.push_back(payload); });
 
     TaskGraph graph;
     graph.name = "acceptance-sample-workflow";
@@ -45,19 +57,22 @@ int main()
 
     SimpleScheduler scheduler(db, bus);
     WorkflowManager manager(scheduler);
-    const bool ok = manager.submit_and_run(graph, [](Task& task) {
-        task.last_checkpoint.stage_name = task.name;
-        task.last_checkpoint.saved_at = Timestamp::now();
-        return TaskExecutionResult{TaskExecutionStatus::Success, "accepted"};
-    });
+    const bool ok = manager.submit_and_run(
+        graph,
+        [](Task &task)
+        {
+            task.last_checkpoint.stage_name = task.name;
+            task.last_checkpoint.saved_at = Timestamp::now();
+            return TaskExecutionResult{TaskExecutionStatus::Success, "accepted"};
+        });
 
-    assert(ok);
-    assert(graph.state == GraphState::Completed);
-    assert(graph.task(load_id).state == TaskState::Completed);
-    assert(graph.task(measure_id).state == TaskState::Completed);
-    assert(graph.task(archive_id).state == TaskState::Completed);
-    assert(scheduler.audit_records().size() == 9);
-    assert(events.size() == scheduler.audit_records().size());
+    require(ok, "workflow must complete");
+    require(graph.state == GraphState::Completed, "graph must be completed");
+    require(graph.task(load_id).state == TaskState::Completed, "load task must be completed");
+    require(graph.task(measure_id).state == TaskState::Completed, "measure task must be completed");
+    require(graph.task(archive_id).state == TaskState::Completed, "archive task must be completed");
+    require(scheduler.audit_records().size() == 9, "workflow must emit nine audits");
+    require(events.size() == scheduler.audit_records().size(), "event count must match audits");
 
     db.close();
     std::cout << "acceptance workflow passed with " << scheduler.audit_records().size()

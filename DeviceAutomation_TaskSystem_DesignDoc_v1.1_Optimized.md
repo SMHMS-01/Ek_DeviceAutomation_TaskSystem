@@ -27,6 +27,7 @@
 当前映射：`PHASE 2.1 Persistence Recovery` 属于原始设计第 7 节“审计日志与持久化”和第 11 节“健康监控与看门狗”的恢复前置能力，也受第 14 节开源库选型约束。
 
 当前状态：`PHASE 2.1 Persistence Recovery` 已完成，可作为 `PHASE 3 Scheduler & Executors` 的持久化/审计基础。
+`PHASE 3.1 Executor Contract` 已启动：当前提供 `IExecutor`、`InlineExecutor`、主程序 smoke 入口 `device_automation_task_system` 和线性工作流测试数据 `tests/fixtures/sample_workflow_linear.csv`；完整生产主程序仍依赖 PHASE 3 后续 ExecutorPool 和 SchedulingPolicy。
 
 ## 2. 当前可交付范围
 

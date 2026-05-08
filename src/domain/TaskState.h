@@ -1,6 +1,7 @@
 #pragma once
 
-namespace device_automation::domain {
+namespace device_automation::domain
+{
 
 /**
  * @brief 任务状态枚举
@@ -8,16 +9,16 @@ namespace device_automation::domain {
  */
 enum class TaskState
 {
-    Pending,          ///< 已提交，等待依赖完成
-    Ready,            ///< 依赖满足，等待执行器
-    Running,          ///< 执行中
-    Paused,           ///< 人工暂停（保存 Checkpoint）
-    Completed,        ///< 成功完成
-    Failed,           ///< 失败（等待重试/人工处理）
-    Cancelled,        ///< 已取消
-    RollingBack,      ///< 回滚中
-    RolledBack,       ///< 回滚完成
-    WaitingForHuman,  ///< 超过重试次数，等待人工干预
+    Pending,         ///< 已提交，等待依赖完成
+    Ready,           ///< 依赖满足，等待执行器
+    Running,         ///< 执行中
+    Paused,          ///< 人工暂停（保存 Checkpoint）
+    Completed,       ///< 成功完成
+    Failed,          ///< 失败（等待重试/人工处理）
+    Cancelled,       ///< 已取消
+    RollingBack,     ///< 回滚中
+    RolledBack,      ///< 回滚完成
+    WaitingForHuman, ///< 超过重试次数，等待人工干预
 };
 
 /**
@@ -35,12 +36,12 @@ enum class TaskKind
  */
 enum class GraphState
 {
-    Created,    ///< 新创建
-    Submitted,  ///< 已提交到调度器
-    Running,    ///< 工作流运行中
-    Completed,  ///< 工作流完成
-    Failed,     ///< 工作流失败
-    Cancelled,  ///< 工作流取消
+    Created,   ///< 新创建
+    Submitted, ///< 已提交到调度器
+    Running,   ///< 工作流运行中
+    Completed, ///< 工作流完成
+    Failed,    ///< 工作流失败
+    Cancelled, ///< 工作流取消
 };
 
 /**

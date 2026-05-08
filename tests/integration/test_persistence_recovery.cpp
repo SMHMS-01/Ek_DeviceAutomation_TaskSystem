@@ -6,46 +6,62 @@
 #include "infrastructure/SqliteDatabase.h"
 #include "scheduler/SimpleScheduler.h"
 
-#include <cassert>
 #include <cstdio>
 #include <iostream>
+#include <stdexcept>
 
 using namespace device_automation::application;
 using namespace device_automation::domain;
 using namespace device_automation::infrastructure;
 using namespace device_automation::scheduler;
 
+namespace
+{
+
+void require(bool condition, const char *message)
+{
+    if (!condition)
+    {
+        throw std::runtime_error(message);
+    }
+}
+
+} // namespace
+
 int main()
 {
-    const char* db_path = "/tmp/device_automation_persistence_recovery.sqlite";
+    const char *db_path = "/tmp/device_automation_persistence_recovery.sqlite";
     std::remove(db_path);
 
     SqliteDatabase db;
-    assert(db.open(db_path));
+    require(db.open(db_path), "database must open");
 
     MigrationRunner migration_runner(db);
-    assert(migration_runner.apply({SchemaMigration{
-        100,
-        "probe_success",
-        {"CREATE TABLE IF NOT EXISTS migration_probe (id TEXT PRIMARY KEY) STRICT"}}}));
-    assert(migration_runner.apply({SchemaMigration{
-        100,
-        "probe_success",
-        {"CREATE TABLE IF NOT EXISTS migration_probe (id TEXT PRIMARY KEY) STRICT"}}}));
-    auto probe_migrations =
-        db.query("SELECT version FROM schema_migrations WHERE version = 100");
-    assert(probe_migrations.size() == 1);
+    require(migration_runner.apply({SchemaMigration{
+                100,
+                "probe_success",
+                {"CREATE TABLE IF NOT EXISTS migration_probe (id TEXT PRIMARY KEY) STRICT"}}}),
+            "first migration apply must succeed");
+    require(migration_runner.apply({SchemaMigration{
+                100,
+                "probe_success",
+                {"CREATE TABLE IF NOT EXISTS migration_probe (id TEXT PRIMARY KEY) STRICT"}}}),
+            "second migration apply must be idempotent");
+    auto probe_migrations = db.query("SELECT version FROM schema_migrations WHERE version = 100");
+    require(probe_migrations.size() == 1, "migration must be recorded once");
 
-    const bool failed_migration = migration_runner.apply({SchemaMigration{
-        101,
-        "probe_failure",
-        {"CREATE TABLE migration_failure_probe (id TEXT PRIMARY KEY) STRICT",
-         "THIS IS NOT VALID SQL"}}});
-    assert(!failed_migration);
-    assert(db.query("SELECT version FROM schema_migrations WHERE version = 101").empty());
-    assert(db.query("SELECT name FROM sqlite_master WHERE type = 'table' AND "
-                    "name = 'migration_failure_probe'")
-               .empty());
+    const bool failed_migration = migration_runner.apply(
+        {SchemaMigration{101,
+                         "probe_failure",
+                         {"CREATE TABLE migration_failure_probe (id TEXT PRIMARY KEY) STRICT",
+                          "THIS IS NOT VALID SQL"}}});
+    require(!failed_migration, "invalid migration must fail");
+    require(db.query("SELECT version FROM schema_migrations WHERE version = 101").empty(),
+            "failed migration must not be recorded");
+    require(db.query("SELECT name FROM sqlite_master WHERE type = 'table' AND "
+                     "name = 'migration_failure_probe'")
+                .empty(),
+            "failed migration must roll back DDL");
 
     EventBus bus;
     SimpleScheduler scheduler(db, bus);
@@ -60,47 +76,58 @@ int main()
     graph.add_task(analyze);
     graph.add_dependency(prepare_id, analyze_id);
 
-    const bool ok = manager.submit_and_run(graph, [](Task&) {
-        return TaskExecutionResult{TaskExecutionStatus::Success, "persisted"};
-    });
-    assert(ok);
+    const bool ok = manager.submit_and_run(
+        graph,
+        [](Task &) {
+            return TaskExecutionResult{TaskExecutionStatus::Success, "persisted"};
+        });
+    require(ok, "workflow must complete");
 
     AuditService audit(db);
-    assert(audit.replay_task_state(prepare_id.to_string()) == "Completed");
-    assert(audit.replay_task_state(analyze_id.to_string()) == "Completed");
-    assert(audit.events_for_task(prepare_id.to_string()).size() == 3);
-    assert(audit.events_for_workflow(graph.id.to_string()).size() == 6);
+    require(audit.replay_task_state(prepare_id.to_string()) == "Completed",
+            "prepare state must replay to completed");
+    require(audit.replay_task_state(analyze_id.to_string()) == "Completed",
+            "analyze state must replay to completed");
+    require(audit.events_for_task(prepare_id.to_string()).size() == 3,
+            "prepare task must have three audit events");
+    require(audit.events_for_workflow(graph.id.to_string()).size() == 6,
+            "workflow must have six audit events");
 
     const auto interrupted_task = TaskId::generate().to_string();
     const auto interrupted_workflow = WorkflowId::generate().to_string();
-    db.execute("INSERT INTO tasks(id, workflow_id, name, state, priority, retry_count, error_message) "
-               "VALUES('" +
-               interrupted_task + "', '" + interrupted_workflow +
-               "', 'interrupted task', 'Running', 2, 0, '')");
+    db.execute(
+        "INSERT INTO tasks(id, workflow_id, name, state, priority, retry_count, error_message) "
+        "VALUES('" +
+        interrupted_task + "', '" + interrupted_workflow +
+        "', 'interrupted task', 'Running', 2, 0, '')");
 
     const int recovered = audit.recover_running_tasks();
-    assert(recovered == 1);
+    require(recovered == 1, "one interrupted task must be recovered");
 
     auto recovered_rows = db.query("SELECT state FROM tasks WHERE id = '" + interrupted_task + "'");
-    assert(recovered_rows.size() == 1);
-    assert(recovered_rows.front().at("state") == "Paused");
-    assert(audit.replay_task_state(interrupted_task) == "Paused");
+    require(recovered_rows.size() == 1, "recovered task row must exist");
+    require(recovered_rows.front().at("state") == "Paused", "recovered task must be paused");
+    require(audit.replay_task_state(interrupted_task) == "Paused",
+            "recovered state must replay to paused");
 
     auto migrations = db.query("SELECT version FROM schema_migrations WHERE version = 1");
-    assert(migrations.size() == 1);
+    require(migrations.size() == 1, "core migration must be present");
 
-    assert(db.execute("CREATE TABLE IF NOT EXISTS tx_probe (id TEXT PRIMARY KEY) STRICT"));
-    assert(db.begin_transaction());
-    assert(db.execute("INSERT INTO tx_probe(id) VALUES('rolled_back')"));
-    assert(db.rollback_transaction());
+    require(db.execute("CREATE TABLE IF NOT EXISTS tx_probe (id TEXT PRIMARY KEY) STRICT"),
+            "transaction probe table must be created");
+    require(db.begin_transaction(), "rollback transaction must begin");
+    require(db.execute("INSERT INTO tx_probe(id) VALUES('rolled_back')"),
+            "rollback probe insert must succeed");
+    require(db.rollback_transaction(), "rollback transaction must roll back");
     auto rolled_back = db.query("SELECT id FROM tx_probe WHERE id = 'rolled_back'");
-    assert(rolled_back.empty());
+    require(rolled_back.empty(), "rolled back row must not exist");
 
-    assert(db.begin_transaction());
-    assert(db.execute("INSERT INTO tx_probe(id) VALUES('committed')"));
-    assert(db.commit_transaction());
+    require(db.begin_transaction(), "commit transaction must begin");
+    require(db.execute("INSERT INTO tx_probe(id) VALUES('committed')"),
+            "commit probe insert must succeed");
+    require(db.commit_transaction(), "commit transaction must commit");
     auto committed = db.query("SELECT id FROM tx_probe WHERE id = 'committed'");
-    assert(committed.size() == 1);
+    require(committed.size() == 1, "committed row must exist");
 
     db.close();
     std::cout << "persistence recovery passed\n";

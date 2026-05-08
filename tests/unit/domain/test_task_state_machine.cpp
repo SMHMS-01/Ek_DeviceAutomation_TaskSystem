@@ -1,7 +1,7 @@
-#include <gtest/gtest.h>
-
-#include "domain/TaskStateMachine.h"
 #include "domain/TaskState.h"
+#include "domain/TaskStateMachine.h"
+
+#include <gtest/gtest.h>
 
 using namespace device_automation::domain;
 
@@ -147,7 +147,7 @@ TEST_F(TaskStateMachineTest, CannotTransitionFromCompletedState)
     fsm.transition_to(TaskState::Ready);
     fsm.transition_to(TaskState::Running);
     fsm.transition_to(TaskState::Completed);
-    
+
     // Completed 是终态
     EXPECT_FALSE(fsm.can_transition_to(TaskState::Pending));
     EXPECT_FALSE(fsm.can_transition_to(TaskState::Failed));
@@ -159,14 +159,14 @@ TEST_F(TaskStateMachineTest, CompletedStateThrowsOnInvalidTransition)
     fsm.transition_to(TaskState::Ready);
     fsm.transition_to(TaskState::Running);
     fsm.transition_to(TaskState::Completed);
-    
+
     EXPECT_THROW(fsm.transition_to(TaskState::Failed), InvalidStateTransitionException);
 }
 
 TEST_F(TaskStateMachineTest, CannotTransitionFromCancelledState)
 {
     fsm.transition_to(TaskState::Cancelled);
-    
+
     // Cancelled 是终态
     EXPECT_FALSE(fsm.can_transition_to(TaskState::Running));
     EXPECT_FALSE(fsm.can_transition_to(TaskState::Pending));
@@ -175,7 +175,7 @@ TEST_F(TaskStateMachineTest, CannotTransitionFromCancelledState)
 TEST_F(TaskStateMachineTest, CancelledStateThrowsOnInvalidTransition)
 {
     fsm.transition_to(TaskState::Cancelled);
-    
+
     EXPECT_THROW(fsm.transition_to(TaskState::Running), InvalidStateTransitionException);
 }
 
@@ -203,7 +203,7 @@ TEST_F(TaskStateMachineTest, PausedCannotGoRollingBack)
     fsm.transition_to(TaskState::Ready);
     fsm.transition_to(TaskState::Running);
     fsm.transition_to(TaskState::Paused);
-    
+
     EXPECT_FALSE(fsm.can_transition_to(TaskState::RollingBack));
     EXPECT_THROW(fsm.transition_to(TaskState::RollingBack), InvalidStateTransitionException);
 }
@@ -217,11 +217,14 @@ TEST_F(TaskStateMachineTest, InvalidStateTransitionExceptionContainsInfo)
     fsm.transition_to(TaskState::Ready);
     fsm.transition_to(TaskState::Running);
     fsm.transition_to(TaskState::Completed);
-    
-    try {
+
+    try
+    {
         fsm.transition_to(TaskState::Failed);
         FAIL() << "Expected InvalidStateTransitionException";
-    } catch (const InvalidStateTransitionException& e) {
+    }
+    catch (const InvalidStateTransitionException &e)
+    {
         EXPECT_EQ(e.from_state(), TaskState::Completed);
         EXPECT_EQ(e.to_state(), TaskState::Failed);
         EXPECT_NE(std::string(e.what()).find("Completed"), std::string::npos);
@@ -245,7 +248,7 @@ TEST_F(TaskStateMachineTest, ValidNextStatesFromRunning)
 {
     fsm.transition_to(TaskState::Ready);
     fsm.transition_to(TaskState::Running);
-    
+
     auto valid = fsm.valid_next_states();
     EXPECT_EQ(valid.size(), 4);
     EXPECT_TRUE(std::find(valid.begin(), valid.end(), TaskState::Completed) != valid.end());
@@ -259,7 +262,7 @@ TEST_F(TaskStateMachineTest, ValidNextStatesFromFailed)
     fsm.transition_to(TaskState::Ready);
     fsm.transition_to(TaskState::Running);
     fsm.transition_to(TaskState::Failed);
-    
+
     auto valid = fsm.valid_next_states();
     EXPECT_EQ(valid.size(), 3);
     EXPECT_TRUE(std::find(valid.begin(), valid.end(), TaskState::Pending) != valid.end());
@@ -283,7 +286,7 @@ TEST_F(TaskStateMachineTest, PauseResumeRerunCycle)
     fsm.transition_to(TaskState::Ready);
     fsm.transition_to(TaskState::Running);
     fsm.transition_to(TaskState::Completed);
-    
+
     EXPECT_EQ(fsm.current_state(), TaskState::Completed);
 }
 
@@ -296,7 +299,7 @@ TEST_F(TaskStateMachineTest, RollbackCycle)
     fsm.transition_to(TaskState::RollingBack);
     fsm.transition_to(TaskState::RolledBack);
     fsm.transition_to(TaskState::Pending);
-    
+
     EXPECT_EQ(fsm.current_state(), TaskState::Pending);
 }
 
@@ -308,7 +311,7 @@ TEST_F(TaskStateMachineTest, CancelFromMultipleStates)
         fsm_pending.transition_to(TaskState::Cancelled);
         EXPECT_EQ(fsm_pending.current_state(), TaskState::Cancelled);
     }
-    
+
     // Test cancellation from Ready
     {
         TaskStateMachine fsm_ready;
@@ -316,7 +319,7 @@ TEST_F(TaskStateMachineTest, CancelFromMultipleStates)
         fsm_ready.transition_to(TaskState::Cancelled);
         EXPECT_EQ(fsm_ready.current_state(), TaskState::Cancelled);
     }
-    
+
     // Test cancellation from Running
     {
         TaskStateMachine fsm_running;

@@ -1,12 +1,14 @@
 #include "Types.h"
 
+#include <chrono>
 #include <random>
 #include <sstream>
-#include <chrono>
 
-namespace device_automation::domain {
+namespace device_automation::domain
+{
 
-namespace {
+namespace
+{
 
 /**
  * @brief 生成 UUID v4 字符串
@@ -18,9 +20,11 @@ std::string generate_uuid_v4()
     static std::uniform_int_distribution<> dis(0, 15);
 
     std::stringstream ss;
-    for (int i = 0; i < 32; ++i) {
+    for (int i = 0; i < 32; ++i)
+    {
         int d = dis(gen);
-        if (i == 8 || i == 12 || i == 16 || i == 20) {
+        if (i == 8 || i == 12 || i == 16 || i == 20)
+        {
             ss << "-";
         }
         ss << "0123456789abcdef"[d];
