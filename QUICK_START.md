@@ -7,10 +7,10 @@
 - Domain：Task、TaskGraph、FSM、Priority、ID/时间类型
 - Infrastructure：EventBus、SqliteDatabase、Logger fallback、设备接口基础
 - Scheduler：SimpleScheduler，可按 DAG 推进状态并写审计
-- Executor：IExecutor、InlineExecutor 已作为 PHASE 3.1 启动切片
-- Application：WorkflowManager，作为工作流提交入口；AuditService 可查询审计、重放任务状态并恢复中断任务
+- Executor：IExecutor、InlineExecutor、ExecutorPool、SchedulingPolicy、DeviceExecutor 已完成 PHASE 3.3 beta 主干
+- Application：WorkflowManager，作为工作流提交入口；AuditService 可查询审计、重放任务状态并恢复中断任务；InterventionService 支持人工干预审计
 - Main：`device_automation_task_system` 可编译运行，支持样例 CSV 工作流
-- Acceptance：端到端工作流、持久化恢复、CLI smoke 测试通过
+- Acceptance：端到端工作流、持久化恢复、ExecutorPool、InterventionService、CLI smoke 测试通过
 
 完整执行计划见 [MASTER_ROADMAP.md](MASTER_ROADMAP.md)。  
 测试和审批证据见 [PHASE_APPROVAL.md](PHASE_APPROVAL.md)。  
@@ -30,6 +30,8 @@ ctest --test-dir build --output-on-failure
 Phase1_2_Standalone
 AcceptanceWorkflow
 PersistenceRecovery
+ExecutorPool
+InterventionService
 CliSmoke
 ```
 
@@ -60,19 +62,17 @@ python3 scripts/check_includes.py
 git checkout develop
 git status --short --branch
 git add .
-git commit -m "feat: implement v1.1 core workflow scaffold"
-git push -u origin develop
-git tag v1.1.0-core-scaffold
-git push origin v1.1.0-core-scaffold
+git commit -m "feat: add executor pool and intervention service"
+git push origin develop
 ```
 
-`main` 保持稳定发布分支；`develop` 作为开发集成分支。PHASE 2.1 已完成，当前可从 `develop` 进入 PHASE 3；合并 `main` 仍建议等 PHASE 3 的执行器主干验收后再准备 release 分支。
+`main` 保持稳定发布分支；`develop` 作为开发集成分支。PHASE 3.3 已完成，当前主程序进入 beta 可用状态；合并 `main` 仍建议等 PHASE 4/5 的权限、超时、取消和设备状态协调闭环后再准备 release 分支。
 
 ## 下一阶段
 
-PHASE 3.1 — Executor Contract 已启动：
+PHASE 4 — Application Services 继续推进：
 
-1. 已有 `IExecutor` / `InlineExecutor`。
-2. 已有可编译主程序 `device_automation_task_system`。
-3. 已有样例测试数据 `tests/fixtures/sample_workflow_linear.csv`。
-4. 下一步优先评估 Taskflow、BS::thread_pool、eventpp，避免重复造轮子。
+1. 已有 `InterventionService` 的 pause/resume/cancel/retry/force_complete 启动切片。
+2. 下一步补权限矩阵、二次确认和 rollback 干预。
+3. 同步推进 DeviceStateReconciler、TimeoutPolicy、CancelToken。
+4. 进入高并发验证前优先评估 Taskflow、BS::thread_pool、eventpp，避免重复造轮子。

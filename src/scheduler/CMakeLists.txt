@@ -1,5 +1,8 @@
 add_library(device_automation_scheduler STATIC
+    DeviceExecutor.cpp
+    ExecutorPool.cpp
     InlineExecutor.cpp
+    SchedulingPolicy.cpp
     SimpleScheduler.cpp
 )
 

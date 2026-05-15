@@ -20,13 +20,13 @@
 |------|------|
 | 当前分支 | `develop` |
 | 远程仓库 | `origin=https://github.com/SMHMS-01/Ek_DeviceAutomation_TaskSystem.git` |
-| 远程跟踪 | `main` 已跟踪；`develop` 尚未建立 upstream |
+| 远程跟踪 | `develop` 已跟踪 `origin/develop`；`main` 已跟踪 |
 | 最新设计基线 | v1.1 Optimized |
-| 当前开发阶段 | PHASE 3.1：Executor Contract 启动 |
-| 当前验收结果 | Debug/Release `ctest` 均通过，4/4 |
-| 本地提交 | `feat: implement v1.1 core workflow scaffold`，当前 HEAD |
+| 当前开发阶段 | PHASE 4.1：Intervention Service 启动切片 |
+| 当前验收结果 | Debug/Release `ctest` 均通过，6/6；include rule 检查通过 |
+| 本地提交 | 当前 HEAD：`feat: add executor pool and intervention service` |
 | 本地标签 | `v1.1.0-core-scaffold` |
-| 远程推送 | 被安全策略拦截，需用户知晓外部数据导出风险后再次明确批准 |
+| 远程推送 | 已尝试；当前环境缺少 GitHub HTTPS 凭据，需配置凭据后重试 `git push origin develop` |
 | 已归档资料 | 根目录旧构建产物 `test_phase_1_2` 已移入 `弃用资料/` |
 
 ## 2. DEV PHASE 设计
@@ -90,12 +90,15 @@
 
 目标：让工作流可以分配给执行器，逐步支持线程池、设备串行执行和调度策略。
 
-状态：PHASE 3.1 已启动
+状态：PHASE 3.3 完成，进入 beta 可用状态
 
 已完成：
 - SimpleScheduler
 - IExecutor
 - InlineExecutor
+- ExecutorPool
+- SchedulingPolicy：RoundRobin、PriorityFirst、DeviceAffinity
+- DeviceExecutor：绑定 `IDevice`，同一设备串行执行
 - 主程序 smoke 入口 `device_automation_task_system`
 - 样例测试数据 `tests/fixtures/sample_workflow_linear.csv`
 - `Pending -> Ready -> Running -> Completed`
@@ -105,27 +108,28 @@
 - EventBus 状态事件发布
 
 遗留：
-- ExecutorPool
-- 线程池/协程/设备执行器
+- BS::thread_pool 或 Taskflow 的完整生产替换评估
+- 协程执行器
+- 取消协议与任务句柄
 - RateLimiter
-- SchedulingPolicy 抽象
 - 优先级等待时长排序细化
 
 ### Phase 4 — Application MVP
 
 目标：提供应用服务入口。
 
-状态：MVP 完成
+状态：PHASE 4.1 已进入，人工干预启动切片完成
 
 已完成：
 - WorkflowManager
+- AuditService
+- InterventionService：pause/resume/cancel/retry/force_complete，原因必填，写入审计
 - submit_and_run 集成入口
 
 遗留：
-- ManualInterventionService
-- AuditService
 - HealthMonitor
 - 权限与高危操作二次确认
+- DeviceStateReconciler
 
 ### Phase 5 — Fault Tolerance
 
@@ -142,7 +146,7 @@
 
 ## 3. 下一阶段作战目标
 
-### 当前阶段：PHASE 2.1 — Persistence Recovery
+### 已完成阶段：PHASE 2.1 — Persistence Recovery
 
 目标：让系统不仅能写入审计，还能查询、恢复、验证落库状态。
 
@@ -178,7 +182,7 @@
    - 已完成：模拟崩溃恢复
    - 已完成：migration 幂等和失败回滚
 
-### 当前阶段：PHASE 3 — Scheduler & Executors
+### 已完成阶段：PHASE 3 — Scheduler & Executors
 
 进入条件：
 
@@ -192,10 +196,11 @@
 2. 已完成：增加 `InlineExecutor`，作为 PHASE 3 执行器契约 smoke slice。
 3. 已完成：增加可编译主程序 `device_automation_task_system`。
 4. 已完成：准备样例工作流数据 `tests/fixtures/sample_workflow_linear.csv`。
-5. 下一步：引入 ExecutorPool，优先评估 `BS::thread_pool`，避免手写线程池。
-6. 下一步：抽象 `SchedulingPolicy`，为 PriorityFirst 和 DeviceAffinity 留扩展点。
-7. 下一步：评估 `Taskflow` 是否作为完整 DAG 编排引擎，SimpleScheduler 保留为 MVP/测试适配层。
-8. 下一步：增加执行器集成测试：成功、失败、重试、取消、设备串行执行。
+5. 已完成：引入 `ExecutorPool`，支持多执行器分配和并发任务验证。
+6. 已完成：抽象 `SchedulingPolicy`，提供 `RoundRobinPolicy`、`PriorityFirstPolicy`、`DeviceAffinityPolicy`。
+7. 已完成：增加 `DeviceExecutor`，通过 `IDevice`/`MockDevice` 验证设备绑定和串行命令发送。
+8. 后续：评估 `BS::thread_pool` / `Taskflow` 是否替换当前 std::async MVP，SimpleScheduler 保留为测试适配层。
+9. 后续：补齐取消协议、RateLimiter、等待时长排序和高压并发验收。
 
 主程序当前可用性：
 
@@ -204,7 +209,23 @@ cmake --build build
 ./build/bin/device_automation_task_system tests/fixtures/sample_workflow_linear.csv /tmp/device_automation_cli.sqlite
 ```
 
-当前主程序是 PHASE 3.1 smoke 版本，可编译、可运行、可读取样例 CSV 并完成一条线性工作流；生产可用主程序预计在 PHASE 3.3 完成 ExecutorPool、SchedulingPolicy 和设备串行执行器后进入 beta。
+当前主程序已进入 PHASE 3.3 beta 状态：可编译、可运行、可读取样例 CSV 并完成一条线性工作流；执行器侧已具备 ExecutorPool、SchedulingPolicy 和设备串行执行器的集成验收。生产发布仍需 PHASE 4/5 的权限、超时、取消和设备状态协调闭环。
+
+### 当前阶段：PHASE 4 — Application Services
+
+进入条件：
+
+- PHASE 3.2 ExecutorPool 验收通过
+- PHASE 3.3 SchedulingPolicy / DeviceExecutor 验收通过
+- 主程序 beta smoke 与样例测试数据可用
+
+首批任务：
+
+1. 已完成：保留 `WorkflowManager` 作为应用提交入口。
+2. 已完成：保留 `AuditService` 作为审计查询、状态重放和重启恢复入口。
+3. 已完成：新增 `InterventionService`，支持 pause/resume/cancel/retry/force_complete。
+4. 已完成：人工干预要求 actor 和 reason，成功操作写 `audit_events` 并发布 `task.intervention`。
+5. 下一步：增加权限矩阵、二次确认、rollback 干预和 DeviceStateReconciler。
 
 验收命令：
 
@@ -229,19 +250,16 @@ python3 scripts/check_includes.py
 本轮建议 Git 动作：
 
 1. 保持当前工作在 `develop`
-2. 提交当前 v1.1 核心骨架与文档整理
-3. 为本地 `develop` 建立远程 upstream：`origin/develop`
-4. 创建标签：`v1.1.0-core-scaffold`
-5. 推送 `develop` 和标签
+2. 提交 PHASE 3.2/3.3 与 PHASE 4.1 变更
+3. 推送 `develop`
+4. 阶段标签只在审批通过且无需返工时创建
 
 提交信息建议：
 
 ```bash
 git add .
-git commit -m "feat: implement v1.1 core workflow scaffold"
-git push -u origin develop
-git tag v1.1.0-core-scaffold
-git push origin v1.1.0-core-scaffold
+git commit -m "feat: add executor pool and intervention service"
+git push origin develop
 ```
 
 ## 5. 作战纪律
@@ -257,5 +275,5 @@ git push origin v1.1.0-core-scaffold
 ---
 
 **文档版本**：v1.1  
-**最后更新**：2026-05-08  
-**当前阶段**：PHASE 3.1 Executor Contract 已启动，主程序 smoke 版本可编译运行
+**最后更新**：2026-05-16
+**当前阶段**：PHASE 4.1 Intervention Service 启动切片，主程序 PHASE 3.3 beta 版本可编译运行

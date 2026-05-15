@@ -1,5 +1,6 @@
 add_library(device_automation_application STATIC
     AuditService.cpp
+    InterventionService.cpp
     WorkflowManager.cpp
 )
 

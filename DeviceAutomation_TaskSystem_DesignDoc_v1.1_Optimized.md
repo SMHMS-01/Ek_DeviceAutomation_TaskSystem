@@ -24,10 +24,9 @@
 | Approval Phase | `PHASE_APPROVAL.md` | 对应 PHASE 的测试证据和审批结论 |
 | Risk ID | `RISK_REGISTER.md` | 条件通过时的隐患追踪编号 |
 
-当前映射：`PHASE 2.1 Persistence Recovery` 属于原始设计第 7 节“审计日志与持久化”和第 11 节“健康监控与看门狗”的恢复前置能力，也受第 14 节开源库选型约束。
+当前映射：`PHASE 3.2 ExecutorPool` 与 `PHASE 3.3 SchedulingPolicy / DeviceExecutor` 属于原始设计第 4 节“DAG 调度引擎”和第 5 节“执行器层”；`PHASE 4.1 Intervention Service` 属于原始设计第 6 节“容错与人工干预”。这些阶段均受原始设计第 14 节开源库选型和 `TechSelection_FeatureList.md` 约束。
 
-当前状态：`PHASE 2.1 Persistence Recovery` 已完成，可作为 `PHASE 3 Scheduler & Executors` 的持久化/审计基础。
-`PHASE 3.1 Executor Contract` 已启动：当前提供 `IExecutor`、`InlineExecutor`、主程序 smoke 入口 `device_automation_task_system` 和线性工作流测试数据 `tests/fixtures/sample_workflow_linear.csv`；完整生产主程序仍依赖 PHASE 3 后续 ExecutorPool 和 SchedulingPolicy。
+当前状态：`PHASE 3.3 Scheduler & Executors` 已完成 beta 主干：当前提供 `IExecutor`、`InlineExecutor`、`ExecutorPool`、`SchedulingPolicy`、`DeviceExecutor`、主程序 smoke 入口 `device_automation_task_system` 和线性工作流测试数据 `tests/fixtures/sample_workflow_linear.csv`。`PHASE 4.1 Intervention Service` 已完成启动切片，支持原因必填的人工 pause/resume/cancel/retry/force_complete 和审计落库。
 
 ## 2. 当前可交付范围
 
@@ -48,6 +47,10 @@
 ### 2.3 Scheduler Layer
 
 - `SimpleScheduler`：按 DAG 依赖推进任务状态
+- `IExecutor` / `InlineExecutor`：执行器窄接口和同步 smoke 执行器
+- `ExecutorPool`：多执行器注册、策略选择、异步提交和 active task 计数
+- `SchedulingPolicy`：RoundRobin、PriorityFirst、DeviceAffinity 策略入口
+- `DeviceExecutor`：绑定 `IDevice` 的设备串行执行器
 - 状态流：`Pending -> Ready -> Running -> Completed`
 - 失败流：`Running -> Failed -> Pending` 自动重试，或 `Failed -> WaitingForHuman`
 - 审计：每次状态变化写入内存 audit_records、SQLite `audit_events`、EventBus
@@ -56,6 +59,7 @@
 
 - `WorkflowManager`：应用服务入口，负责提交工作流并委托 Scheduler 执行
 - `AuditService`：按 task/workflow 查询审计流，支持任务状态重放和 Running 任务恢复为 Paused
+- `InterventionService`：人工 pause/resume/cancel/retry/force_complete，actor/reason 必填，写入状态与审计
 
 ## 3. 模块职责边界
 
@@ -63,12 +67,16 @@
 |------|----------|----------|
 | TaskGraph | 维护 DAG 正确性、判定 ready 任务 | 不执行任务、不访问设备 |
 | TaskStateMachine | 校验状态转换是否合法 | 不决定何时转换 |
-| SimpleScheduler | 驱动依赖、执行 handler、记录审计 | 不实现真实线程池和设备协议 |
+| SimpleScheduler | 驱动依赖、执行 handler、记录审计 | 不实现复杂调度策略和资源限流 |
+| ExecutorPool | 将任务按策略分配给执行器并收集执行结果 | 当前不提供取消句柄、固定大小线程池和 shutdown 协议 |
+| SchedulingPolicy | 封装执行器选择规则 | 当前不处理等待时长、资源配额和限流 |
+| DeviceExecutor | 串行访问单个 `IDevice` | 当前不实现协议驱动、断路器和设备状态协调 |
 | EventBus | 模块间事件广播 | 不保证全局顺序；顺序由审计时间和后续 sequence 字段承担 |
 | SqliteDatabase | 执行 schema、状态/审计 SQL、查询和事务 | 当前不提供 prepared statement/repository 抽象 |
 | MigrationRunner | 管理 schema_migrations、幂等应用、失败回滚 | 当前不提供降级 migration |
-| WorkflowManager | 应用层提交与运行入口 | 当前不包含权限、人工干预和恢复编排 |
+| WorkflowManager | 应用层提交与运行入口 | 当前不包含完整恢复编排 |
 | AuditService | 审计查询、状态重放、基础恢复 | 当前恢复策略固定为 Running -> Paused |
+| InterventionService | 人工干预校验、状态落库、审计和事件发布 | 当前不包含权限矩阵、二次确认和 rollback |
 
 ## 4. 验收流程
 
@@ -87,6 +95,9 @@ ctest --test-dir build --output-on-failure
 | `Phase1_2_Standalone` | 基础类型与 FSM 转换 |
 | `AcceptanceWorkflow` | `load sample -> measure sample -> archive result` 完整 DAG 执行，9 条状态转换审计，事件数量与审计数量一致 |
 | `PersistenceRecovery` | SQLite 查询、事务 commit/rollback、migration 幂等/失败回滚、task/workflow 审计查询、状态重放、Running 任务恢复 |
+| `ExecutorPool` | 多执行器分配、RoundRobin 策略、DeviceAffinity 策略、DeviceExecutor 串行设备命令 |
+| `InterventionService` | 人工干预原因必填、非法状态拒绝、状态落库、审计和事件发布 |
+| `CliSmoke` | 主程序读取样例 CSV 并完成工作流 |
 
 ## 4.1 开源库复用策略
 
@@ -94,21 +105,21 @@ ctest --test-dir build --output-on-failure
 
 | 能力 | 优先复用 | 当前处理 |
 |------|----------|----------|
-| DAG 编排 | Taskflow | SimpleScheduler 为 MVP，PHASE 3 前评估迁移或适配 |
+| DAG 编排 | Taskflow | SimpleScheduler 为 MVP；复杂 DAG/条件分支或高并发调度前评估迁移或适配 |
 | 状态机 | Boost.SML | 当前 FSM 手写，状态复杂度上升前评估 Boost.SML |
-| 线程池 | BS::thread_pool | ExecutorPool 阶段优先评估 |
+| 线程池 | BS::thread_pool | 当前 ExecutorPool 基于 `std::async` 验证窄接口；压测前优先适配 BS::thread_pool |
 | 事件总线 | eventpp | 当前 EventBus 同步 MVP，高吞吐和过滤需求出现时评估替换 |
 | SQLite 封装 | SQLiteCpp | 当前 sqlite3 C API 足够验证；查询和事务复杂化后评估 SQLiteCpp |
 | 日志 | spdlog | 已可选集成，缺失时 fallback |
 
 ## 5. 下一阶段路线
 
-1. 增加 `IDatabase` 查询接口，用于恢复、审计查询和断言落库内容。
-2. 增加 ExecutorPool：线程池、设备串行执行器、取消/暂停协作协议。
-3. 增加 ManualInterventionService：权限、原因必填、二次确认、人工 retry/force_complete/rollback。
+1. 增加 ExecutorPool 生产化：BS::thread_pool/Taskflow 适配、任务句柄、取消/暂停协作协议。
+2. 完善 SchedulingPolicy：等待时长、资源配额、RateLimiter 和饥饿防护。
+3. 完善 InterventionService：权限矩阵、二次确认、人工 rollback。
 4. 增加 WatchDog 与 TimeoutPolicy：软超时保存 checkpoint，硬超时取消并审计。
 5. 增加 DeviceRegistry 与协议适配器：MockDevice 先扩展为可注入失败/延迟的模拟器。
-6. 增加恢复启动流程：重启时将 Running 任务恢复为 Paused/WaitingForHuman，等待人工确认。
+6. 增加 DeviceStateReconciler：重启时协调软件 FSM 与物理设备状态。
 
 ## 6. 当前工程状态
 
@@ -119,6 +130,8 @@ ctest --test-dir build --output-on-failure
 - 可测试
 - 有端到端样本工作流
 - 有 SQLite 审计落库路径
+- 有多执行器和设备执行器 beta 验收
+- 有人工干预启动切片
 - 保留 v1.0 全量架构演进空间
 
-*设计书版本：v1.1 | 更新日期：2026-05-07 | 当前状态：核心骨架已开发并通过验收*
+*设计书版本：v1.1 | 更新日期：2026-05-16 | 当前状态：PHASE 3.3 beta 主干与 PHASE 4.1 人工干预切片已开发并通过验收*

@@ -24,8 +24,9 @@ static bool is_valid_transition(TaskState from, TaskState to)
                to == TaskState::Cancelled;
 
     case TaskState::Paused:
-        // Paused 可转移到：Running, Cancelled, Failed（由人工强制）
-        return to == TaskState::Running || to == TaskState::Cancelled || to == TaskState::Failed;
+        // Paused 可转移到：Running, Cancelled, Failed（由人工强制）, Completed（强制完成）
+        return to == TaskState::Running || to == TaskState::Cancelled || to == TaskState::Failed ||
+               to == TaskState::Completed;
 
     case TaskState::Completed:
         // Completed 是终态，不可转移
