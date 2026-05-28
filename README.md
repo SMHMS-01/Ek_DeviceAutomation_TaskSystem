@@ -63,7 +63,7 @@ The Device Automation Task System is a comprehensive framework designed to autom
 
 ## Project Status
 
-**Current Phase**: PHASE 3.3 beta executor core + PHASE 4.1 intervention slice
+**Current Phase**: PHASE 3.3 beta executor core + PHASE 4.2 application hardening
 
 - ✅ Original architecture and design document
 - ✅ Optimized v1.1 design document with acceptance boundary
@@ -72,10 +72,11 @@ The Device Automation Task System is a comprehensive framework designed to autom
 - ✅ Simple DAG scheduler with SQLite-backed audit writes
 - ✅ AuditService with task audit replay and interrupted task recovery
 - ✅ PHASE 3.3 executor core: executor contract, inline executor, ExecutorPool, SchedulingPolicy, DeviceExecutor
-- ✅ PHASE 4.1 InterventionService: pause/resume/cancel/retry/force-complete with required reason and audit
+- ✅ PHASE 4.2 InterventionService hardening: permissions, confirmation, rollback, required reason, and audit
+- ✅ DeviceStateReconciler: Consistent/DeviceAhead/DeviceBehind/Unknown matrix
 - ✅ CLI smoke program and sample workflow fixture
 - ✅ Thread-safe EventBus and SQLite infrastructure implementation
-- ✅ Standalone, end-to-end, persistence recovery, executor pool, intervention, and CLI smoke tests
+- ✅ Standalone, end-to-end, persistence recovery, executor pool, intervention, device reconciliation, and CLI smoke tests
 
 ## Documentation
 
@@ -140,7 +141,7 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-Current acceptance includes standalone domain/FSM checks, an end-to-end DAG workflow, persistence recovery, executor pool/device executor verification, intervention service verification, and CLI smoke.
+Current acceptance includes standalone domain/FSM checks, an end-to-end DAG workflow, persistence recovery, executor pool/device executor verification, intervention service verification, device reconciliation, and CLI smoke.
 
 Run the current smoke main program:
 
@@ -158,7 +159,7 @@ workflow=cli-sample-workflow state=Completed tasks=3 audits=9
 The project is ready for continued development across the following components:
 1. **Executor Pool Productionization** — BS::thread_pool/Taskflow adapter, cancellation handles, graceful shutdown
 2. **Scheduling Policy Hardening** — Rate limiting, wait-duration fairness, resource quotas
-3. **Manual Intervention Service** — Permission matrix, second confirmation, rollback intervention
+3. **Recovery Reconciliation** — Wire DeviceStateReconciler into startup recovery decisions
 4. **WatchDog and TimeoutPolicy** — Soft/hard timeout handling
 5. **Device Abstraction** — Protocol-agnostic device interface
 6. **Plugin System** — Extensible script and driver loading
@@ -177,7 +178,7 @@ See Section 14 of the design document for detailed open-source library recommend
 ## Version
 
 - **Version**: 1.1.0-core-scaffold
-- **Status**: PHASE 3.3 beta executor core and PHASE 4.1 intervention slice acceptance-tested
+- **Status**: PHASE 3.3 beta executor core and PHASE 4.2 application hardening acceptance-tested
 - **Release Date**: May 2026
 
 ## Contributing
@@ -201,4 +202,4 @@ Contributions should follow the patterns outlined in [AGENTS.md](AGENTS.md):
 
 ---
 
-**Last Updated**: May 16, 2026 | **Phase**: PHASE 4.1 in progress
+**Last Updated**: May 28, 2026 | **Phase**: PHASE 4.2 complete

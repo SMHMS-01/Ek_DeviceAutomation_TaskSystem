@@ -8,7 +8,7 @@
 - Infrastructure：EventBus、SqliteDatabase、Logger fallback、设备接口基础
 - Scheduler：SimpleScheduler，可按 DAG 推进状态并写审计
 - Executor：IExecutor、InlineExecutor、ExecutorPool、SchedulingPolicy、DeviceExecutor 已完成 PHASE 3.3 beta 主干
-- Application：WorkflowManager，作为工作流提交入口；AuditService 可查询审计、重放任务状态并恢复中断任务；InterventionService 支持人工干预审计
+- Application：WorkflowManager，作为工作流提交入口；AuditService 可查询审计、重放任务状态并恢复中断任务；InterventionService 支持权限/确认/rollback 人工干预审计；DeviceStateReconciler 支持设备状态协调矩阵
 - Main：`device_automation_task_system` 可编译运行，支持样例 CSV 工作流
 - Acceptance：端到端工作流、持久化恢复、ExecutorPool、InterventionService、CLI smoke 测试通过
 
@@ -32,6 +32,7 @@ AcceptanceWorkflow
 PersistenceRecovery
 ExecutorPool
 InterventionService
+DeviceStateReconciler
 CliSmoke
 ```
 
@@ -66,13 +67,13 @@ git commit -m "feat: add executor pool and intervention service"
 git push origin develop
 ```
 
-`main` 保持稳定发布分支；`develop` 作为开发集成分支。PHASE 3.3 已完成，当前主程序进入 beta 可用状态；合并 `main` 仍建议等 PHASE 4/5 的权限、超时、取消和设备状态协调闭环后再准备 release 分支。
+`main` 保持稳定发布分支；`develop` 作为开发集成分支。PHASE 4.2 已完成，当前主程序进入 beta 可用状态；合并 `main` 仍建议等恢复策略接入、超时和取消闭环后再准备 release 分支。
 
 ## 下一阶段
 
 PHASE 4 — Application Services 继续推进：
 
-1. 已有 `InterventionService` 的 pause/resume/cancel/retry/force_complete 启动切片。
-2. 下一步补权限矩阵、二次确认和 rollback 干预。
-3. 同步推进 DeviceStateReconciler、TimeoutPolicy、CancelToken。
+1. 已有 `InterventionService` 的权限矩阵、二次确认和 rollback 干预。
+2. 已有 `DeviceStateReconciler` 的 Consistent/DeviceAhead/DeviceBehind/Unknown 矩阵。
+3. 下一步将 DeviceStateReconciler 接入启动恢复策略。
 4. 进入高并发验证前优先评估 Taskflow、BS::thread_pool、eventpp，避免重复造轮子。

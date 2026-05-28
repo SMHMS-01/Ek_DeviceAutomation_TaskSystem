@@ -26,7 +26,7 @@
 
 当前映射：`PHASE 3.2 ExecutorPool` 与 `PHASE 3.3 SchedulingPolicy / DeviceExecutor` 属于原始设计第 4 节“DAG 调度引擎”和第 5 节“执行器层”；`PHASE 4.1 Intervention Service` 属于原始设计第 6 节“容错与人工干预”。这些阶段均受原始设计第 14 节开源库选型和 `TechSelection_FeatureList.md` 约束。
 
-当前状态：`PHASE 3.3 Scheduler & Executors` 已完成 beta 主干：当前提供 `IExecutor`、`InlineExecutor`、`ExecutorPool`、`SchedulingPolicy`、`DeviceExecutor`、主程序 smoke 入口 `device_automation_task_system` 和线性工作流测试数据 `tests/fixtures/sample_workflow_linear.csv`。`PHASE 4.1 Intervention Service` 已完成启动切片，支持原因必填的人工 pause/resume/cancel/retry/force_complete 和审计落库。
+当前状态：`PHASE 3.3 Scheduler & Executors` 已完成 beta 主干：当前提供 `IExecutor`、`InlineExecutor`、`ExecutorPool`、`SchedulingPolicy`、`DeviceExecutor`、主程序 smoke 入口 `device_automation_task_system` 和线性工作流测试数据 `tests/fixtures/sample_workflow_linear.csv`。`PHASE 4.2 Intervention Hardening & Device Reconciliation` 已完成，支持原因必填、权限校验、二次确认、rollback 干预，以及只读设备状态协调。
 
 ## 2. 当前可交付范围
 
@@ -59,7 +59,8 @@
 
 - `WorkflowManager`：应用服务入口，负责提交工作流并委托 Scheduler 执行
 - `AuditService`：按 task/workflow 查询审计流，支持任务状态重放和 Running 任务恢复为 Paused
-- `InterventionService`：人工 pause/resume/cancel/retry/force_complete，actor/reason 必填，写入状态与审计
+- `InterventionService`：人工 pause/resume/cancel/retry/force_complete/rollback，actor/reason 必填，高危操作要求权限和二次确认，写入状态与审计
+- `DeviceStateReconciler`：只读查询设备状态，与任务 FSM 状态比对，输出 Consistent/DeviceAhead/DeviceBehind/Unknown
 
 ## 3. 模块职责边界
 
@@ -76,7 +77,8 @@
 | MigrationRunner | 管理 schema_migrations、幂等应用、失败回滚 | 当前不提供降级 migration |
 | WorkflowManager | 应用层提交与运行入口 | 当前不包含完整恢复编排 |
 | AuditService | 审计查询、状态重放、基础恢复 | 当前恢复策略固定为 Running -> Paused |
-| InterventionService | 人工干预校验、状态落库、审计和事件发布 | 当前不包含权限矩阵、二次确认和 rollback |
+| InterventionService | 人工干预校验、权限矩阵、二次确认、状态落库、审计和事件发布 | 当前不包含真实用户/角色系统 |
+| DeviceStateReconciler | 比对软件 FSM 与物理设备状态并输出协调结论 | 不直接修改 FSM；不决定处置策略 |
 
 ## 4. 验收流程
 
@@ -97,6 +99,7 @@ ctest --test-dir build --output-on-failure
 | `PersistenceRecovery` | SQLite 查询、事务 commit/rollback、migration 幂等/失败回滚、task/workflow 审计查询、状态重放、Running 任务恢复 |
 | `ExecutorPool` | 多执行器分配、RoundRobin 策略、DeviceAffinity 策略、DeviceExecutor 串行设备命令 |
 | `InterventionService` | 人工干预原因必填、非法状态拒绝、状态落库、审计和事件发布 |
+| `DeviceStateReconciler` | Consistent/DeviceAhead/DeviceBehind/Unknown 协调矩阵 |
 | `CliSmoke` | 主程序读取样例 CSV 并完成工作流 |
 
 ## 4.1 开源库复用策略
@@ -116,10 +119,10 @@ ctest --test-dir build --output-on-failure
 
 1. 增加 ExecutorPool 生产化：BS::thread_pool/Taskflow 适配、任务句柄、取消/暂停协作协议。
 2. 完善 SchedulingPolicy：等待时长、资源配额、RateLimiter 和饥饿防护。
-3. 完善 InterventionService：权限矩阵、二次确认、人工 rollback。
+3. 将 DeviceStateReconciler 接入 `AuditService::recover_running_tasks()`，替换固定 Running -> Paused 恢复策略。
 4. 增加 WatchDog 与 TimeoutPolicy：软超时保存 checkpoint，硬超时取消并审计。
 5. 增加 DeviceRegistry 与协议适配器：MockDevice 先扩展为可注入失败/延迟的模拟器。
-6. 增加 DeviceStateReconciler：重启时协调软件 FSM 与物理设备状态。
+6. 增加 CancelToken 与任务句柄：取消请求可达、可审计，并与 ExecutorPool 协作。
 
 ## 6. 当前工程状态
 
@@ -131,7 +134,7 @@ ctest --test-dir build --output-on-failure
 - 有端到端样本工作流
 - 有 SQLite 审计落库路径
 - 有多执行器和设备执行器 beta 验收
-- 有人工干预启动切片
+- 有人工干预加固切片和设备状态协调矩阵
 - 保留 v1.0 全量架构演进空间
 
-*设计书版本：v1.1 | 更新日期：2026-05-16 | 当前状态：PHASE 3.3 beta 主干与 PHASE 4.1 人工干预切片已开发并通过验收*
+*设计书版本：v1.1 | 更新日期：2026-05-28 | 当前状态：PHASE 3.3 beta 主干与 PHASE 4.2 应用服务加固切片已开发并通过验收*

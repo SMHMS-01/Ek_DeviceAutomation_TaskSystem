@@ -22,8 +22,8 @@
 | 远程仓库 | `origin=https://github.com/SMHMS-01/Ek_DeviceAutomation_TaskSystem.git` |
 | 远程跟踪 | `develop` 已跟踪 `origin/develop`；`main` 已跟踪 |
 | 最新设计基线 | v1.1 Optimized |
-| 当前开发阶段 | PHASE 4.1：Intervention Service 启动切片 |
-| 当前验收结果 | Debug/Release `ctest` 均通过，6/6；include rule 检查通过 |
+| 当前开发阶段 | PHASE 4.2：Intervention Hardening & Device Reconciliation |
+| 当前验收结果 | Debug/Release `ctest` 均通过，7/7；include rule 检查通过 |
 | 本地提交 | 当前 HEAD：`feat: add executor pool and intervention service` |
 | 本地标签 | `v1.1.0-core-scaffold` |
 | 远程推送 | 已尝试；当前环境缺少 GitHub HTTPS 凭据，需配置凭据后重试 `git push origin develop` |
@@ -118,18 +118,19 @@
 
 目标：提供应用服务入口。
 
-状态：PHASE 4.1 已进入，人工干预启动切片完成
+状态：PHASE 4.2 已完成，人工干预加固和设备状态协调切片完成
 
 已完成：
 - WorkflowManager
 - AuditService
 - InterventionService：pause/resume/cancel/retry/force_complete，原因必填，写入审计
+- Intervention permission matrix：权限校验、高危二次确认、rollback 干预
+- DeviceStateReconciler：只读比对 FSM 状态与设备状态，输出 Consistent/DeviceAhead/DeviceBehind/Unknown
 - submit_and_run 集成入口
 
 遗留：
 - HealthMonitor
-- 权限与高危操作二次确认
-- DeviceStateReconciler
+- DeviceStateReconciler 接入启动恢复策略
 
 ### Phase 5 — Fault Tolerance
 
@@ -225,7 +226,8 @@ cmake --build build
 2. 已完成：保留 `AuditService` 作为审计查询、状态重放和重启恢复入口。
 3. 已完成：新增 `InterventionService`，支持 pause/resume/cancel/retry/force_complete。
 4. 已完成：人工干预要求 actor 和 reason，成功操作写 `audit_events` 并发布 `task.intervention`。
-5. 下一步：增加权限矩阵、二次确认、rollback 干预和 DeviceStateReconciler。
+5. 已完成：增加权限矩阵、二次确认、rollback 干预和 DeviceStateReconciler。
+6. 下一步：将 DeviceStateReconciler 接入启动恢复策略，替换固定 `Running -> Paused` 的恢复假设。
 
 验收命令：
 
@@ -276,4 +278,4 @@ git push origin develop
 
 **文档版本**：v1.1  
 **最后更新**：2026-05-16
-**当前阶段**：PHASE 4.1 Intervention Service 启动切片，主程序 PHASE 3.3 beta 版本可编译运行
+**当前阶段**：PHASE 4.2 Intervention Hardening & Device Reconciliation，主程序 PHASE 3.3 beta 版本可编译运行

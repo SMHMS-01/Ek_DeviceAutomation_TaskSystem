@@ -2,7 +2,9 @@
 
 #include "domain/TaskStateMachine.h"
 
+#include <algorithm>
 #include <sstream>
+#include <utility>
 
 namespace device_automation::application
 {
@@ -28,6 +30,23 @@ std::string quote(const std::string &value)
     return out;
 }
 
+bool has_permission(const InterventionRequest &request, InterventionPermission permission)
+{
+    return std::find(request.permissions.begin(), request.permissions.end(), permission) !=
+           request.permissions.end();
+}
+
+InterventionRequest trusted_request(std::string actor, std::string reason,
+                                    InterventionPermission permission)
+{
+    InterventionRequest request;
+    request.actor = std::move(actor);
+    request.reason = std::move(reason);
+    request.confirmed = true;
+    request.permissions.push_back(permission);
+    return request;
+}
+
 } // namespace
 
 InterventionService::InterventionService(device_automation::infrastructure::IDatabase &db,
@@ -39,54 +58,112 @@ InterventionService::InterventionService(device_automation::infrastructure::IDat
 InterventionResult InterventionService::pause(device_automation::domain::Task &task,
                                               const std::string &actor, const std::string &reason)
 {
-    return apply(task, device_automation::domain::TaskState::Paused, "HumanPaused", actor, reason);
+    return pause(task, trusted_request(actor, reason, InterventionPermission::TaskControl));
 }
 
 InterventionResult InterventionService::resume(device_automation::domain::Task &task,
                                                const std::string &actor, const std::string &reason)
 {
-    return apply(task, device_automation::domain::TaskState::Running, "HumanResumed", actor,
-                 reason);
+    return resume(task, trusted_request(actor, reason, InterventionPermission::TaskControl));
 }
 
 InterventionResult InterventionService::cancel(device_automation::domain::Task &task,
                                                const std::string &actor, const std::string &reason)
 {
-    return apply(task, device_automation::domain::TaskState::Cancelled, "HumanCancelled", actor,
-                 reason);
+    return cancel(task, trusted_request(actor, reason, InterventionPermission::Cancel));
 }
 
 InterventionResult InterventionService::retry(device_automation::domain::Task &task,
                                               const std::string &actor, const std::string &reason)
 {
-    return apply(task, device_automation::domain::TaskState::Pending, "HumanRetried", actor,
-                 reason);
+    return retry(task, trusted_request(actor, reason, InterventionPermission::Retry));
 }
 
 InterventionResult InterventionService::force_complete(device_automation::domain::Task &task,
                                                        const std::string &actor,
                                                        const std::string &reason)
 {
+    return force_complete(task,
+                          trusted_request(actor, reason, InterventionPermission::ForceComplete));
+}
+
+InterventionResult InterventionService::rollback(device_automation::domain::Task &task,
+                                                 const std::string &actor,
+                                                 const std::string &reason)
+{
+    return rollback(task, trusted_request(actor, reason, InterventionPermission::Rollback));
+}
+
+InterventionResult InterventionService::pause(device_automation::domain::Task &task,
+                                              const InterventionRequest &request)
+{
+    return apply(task, device_automation::domain::TaskState::Paused, "HumanPaused",
+                 InterventionPermission::TaskControl, false, request);
+}
+
+InterventionResult InterventionService::resume(device_automation::domain::Task &task,
+                                               const InterventionRequest &request)
+{
+    return apply(task, device_automation::domain::TaskState::Running, "HumanResumed",
+                 InterventionPermission::TaskControl, false, request);
+}
+
+InterventionResult InterventionService::cancel(device_automation::domain::Task &task,
+                                               const InterventionRequest &request)
+{
+    return apply(task, device_automation::domain::TaskState::Cancelled, "HumanCancelled",
+                 InterventionPermission::Cancel, true, request);
+}
+
+InterventionResult InterventionService::retry(device_automation::domain::Task &task,
+                                              const InterventionRequest &request)
+{
+    return apply(task, device_automation::domain::TaskState::Pending, "HumanRetried",
+                 InterventionPermission::Retry, false, request);
+}
+
+InterventionResult InterventionService::force_complete(device_automation::domain::Task &task,
+                                                       const InterventionRequest &request)
+{
     return apply(task, device_automation::domain::TaskState::Completed, "HumanForcedComplete",
-                 actor, reason);
+                 InterventionPermission::ForceComplete, true, request);
+}
+
+InterventionResult InterventionService::rollback(device_automation::domain::Task &task,
+                                                 const InterventionRequest &request)
+{
+    return apply(task, device_automation::domain::TaskState::RollingBack, "HumanRollbackStarted",
+                 InterventionPermission::Rollback, true, request);
 }
 
 InterventionResult InterventionService::apply(device_automation::domain::Task &task,
                                               device_automation::domain::TaskState next_state,
                                               const std::string &event_type,
-                                              const std::string &actor, const std::string &reason)
+                                              InterventionPermission permission,
+                                              bool confirmation_required,
+                                              const InterventionRequest &request)
 {
     const auto before_state = task.state;
     const auto before_task = task;
     InterventionResult result{false, "", before_state, next_state};
-    if (actor.empty())
+    if (request.actor.empty())
     {
         result.message = "actor is required";
         return result;
     }
-    if (reason.empty())
+    if (request.reason.empty())
     {
         result.message = "reason is required";
+        return result;
+    }
+    if (!has_permission(request, permission))
+    {
+        result.message = "permission denied";
+        return result;
+    }
+    if (confirmation_required && !request.confirmed)
+    {
+        result.message = "confirmation is required";
         return result;
     }
 
@@ -104,7 +181,7 @@ InterventionResult InterventionService::apply(device_automation::domain::Task &t
     {
         task.last_checkpoint.task_id = task.id;
         task.last_checkpoint.saved_at = device_automation::domain::Timestamp::now();
-        task.last_checkpoint.saved_by = actor;
+        task.last_checkpoint.saved_by = request.actor;
     }
     else if (event_type == "HumanResumed")
     {
@@ -119,6 +196,12 @@ InterventionResult InterventionService::apply(device_automation::domain::Task &t
         task.error_message.clear();
         task.scheduled_at = device_automation::domain::Timestamp::now();
     }
+    else if (event_type == "HumanRollbackStarted")
+    {
+        task.last_checkpoint.task_id = task.id;
+        task.last_checkpoint.saved_at = device_automation::domain::Timestamp::now();
+        task.last_checkpoint.saved_by = request.actor;
+    }
 
     task.state = next_state;
     if (!db_.begin_transaction())
@@ -129,7 +212,7 @@ InterventionResult InterventionService::apply(device_automation::domain::Task &t
     }
 
     if (!persist_task(task) ||
-        !record_audit(task, before_state, next_state, event_type, actor, reason))
+        !record_audit(task, before_state, next_state, event_type, request.actor, request.reason))
     {
         db_.rollback_transaction();
         task = before_task;

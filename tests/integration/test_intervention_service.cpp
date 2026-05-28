@@ -111,11 +111,46 @@ int main()
     auto missing_reason = intervention.cancel(missing_reason_task, "operator-e", "");
     require(!missing_reason.accepted, "human intervention reason must be mandatory");
 
+    InterventionRequest denied_cancel;
+    denied_cancel.actor = "operator-f";
+    denied_cancel.reason = "cancel without permission";
+    denied_cancel.confirmed = true;
+    denied_cancel.permissions = {InterventionPermission::TaskControl};
+    auto denied_task = make_task_in_state(TaskState::Pending);
+    auto denied_result = intervention.cancel(denied_task, denied_cancel);
+    require(!denied_result.accepted, "cancel must require cancel permission");
+    require(denied_task.state == TaskState::Pending, "denied cancel must not mutate state");
+
+    InterventionRequest unconfirmed_force;
+    unconfirmed_force.actor = "operator-g";
+    unconfirmed_force.reason = "verified outside system";
+    unconfirmed_force.permissions = {InterventionPermission::ForceComplete};
+    auto unconfirmed_task = make_task_in_state(TaskState::WaitingForHuman);
+    auto unconfirmed_result = intervention.force_complete(unconfirmed_task, unconfirmed_force);
+    require(!unconfirmed_result.accepted, "force complete must require confirmation");
+    require(unconfirmed_task.state == TaskState::WaitingForHuman,
+            "unconfirmed force complete must not mutate state");
+
+    InterventionRequest rollback_request;
+    rollback_request.actor = "operator-h";
+    rollback_request.reason = "revert failed sample preparation";
+    rollback_request.confirmed = true;
+    rollback_request.permissions = {InterventionPermission::Rollback};
+    auto rollback_task = make_task_in_state(TaskState::Failed);
+    auto rollback_result = intervention.rollback(rollback_task, rollback_request);
+    require(rollback_result.accepted, "failed task must support confirmed rollback");
+    require(rollback_task.state == TaskState::RollingBack, "rollback must start rolling back");
+    require(audit.replay_task_state(rollback_task.id.to_string()) == "RollingBack",
+            "rollback must persist and audit state");
+
     const auto running_events = audit.events_for_task(running.id.to_string());
     require(has_event_type(running_events, "HumanPaused"), "pause audit event must be present");
     require(has_event_type(running_events, "HumanResumed"), "resume audit event must be present");
-    require(intervention_events.size() == 5, "accepted interventions must publish events");
-    require(state_events.size() == 5, "accepted interventions must publish state changes");
+    const auto rollback_events = audit.events_for_task(rollback_task.id.to_string());
+    require(has_event_type(rollback_events, "HumanRollbackStarted"),
+            "rollback audit event must be present");
+    require(intervention_events.size() == 6, "accepted interventions must publish events");
+    require(state_events.size() == 6, "accepted interventions must publish state changes");
 
     db.close();
     std::cout << "intervention service passed\n";

@@ -324,7 +324,8 @@ v1.1 Section 4.1 的"开源库复用策略"表缺少以下行：
 
 - `PHASE 3.2 ExecutorPool`：先用 C++20 标准库和 `IExecutor` 窄接口完成多执行器验证，避免在接口尚未稳定时直接绑定第三方线程池。
 - `PHASE 3.3 SchedulingPolicy / DeviceExecutor`：实现 `RoundRobinPolicy`、`PriorityFirstPolicy`、`DeviceAffinityPolicy` 和基于 `IDevice` 的设备串行执行器。
-- `PHASE 4.1 InterventionService`：实现 pause/resume/cancel/retry/force_complete，actor/reason 必填，状态与审计落库。
+- `PHASE 4.2 InterventionService`：实现 pause/resume/cancel/retry/force_complete/rollback，actor/reason 必填，高危操作权限和二次确认，状态与审计落库。
+- `PHASE 4.2 DeviceStateReconciler`：实现 Consistent/DeviceAhead/DeviceBehind/Unknown 只读协调矩阵。
 
 保留替换点：
 
@@ -334,9 +335,9 @@ v1.1 Section 4.1 的"开源库复用策略"表缺少以下行：
 
 新增必须跟踪项：
 
-- `DeviceStateReconciler` 仍未实现，已记录到 `RISK_REGISTER.md` R-014。
-- RateLimiter、CancelToken、TimeoutPolicy、权限矩阵和二次确认仍是 PHASE 4/5 的生产化前置项。
+- `DeviceStateReconciler` 尚未接入启动恢复策略，继续由 `RISK_REGISTER.md` R-009 跟踪。
+- RateLimiter、CancelToken、TimeoutPolicy 仍是 PHASE 4/5 的生产化前置项。
 
 ---
 
-*版本：v1.0 | 日期：2026-05-16 | 配套文档：设计书 v1.1 | 当前阶段：PHASE 4.1*
+*版本：v1.0 | 日期：2026-05-28 | 配套文档：设计书 v1.1 | 当前阶段：PHASE 4.2*

@@ -4,6 +4,7 @@
 
 #include <mutex>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace device_automation::infrastructure
@@ -42,6 +43,17 @@ public:
         std::lock_guard<std::mutex> lock(mu_);
         return last_;
     }
+    std::string status() override
+    {
+        std::lock_guard<std::mutex> lock(mu_);
+        return status_;
+    }
+
+    void set_status(std::string status)
+    {
+        std::lock_guard<std::mutex> lock(mu_);
+        status_ = std::move(status);
+    }
 
     bool is_connected() const
     {
@@ -59,6 +71,7 @@ private:
     mutable std::mutex mu_;
     bool connected_ = false;
     std::string last_;
+    std::string status_ = "Idle";
     std::vector<std::string> sent_payloads_;
 };
 

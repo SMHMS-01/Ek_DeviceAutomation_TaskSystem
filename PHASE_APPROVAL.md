@@ -37,7 +37,7 @@
 | Phase 1 | Domain Core | 基本完成 | 条件通过 |
 | Phase 2 | Infrastructure Core | PHASE 2.1 完成 | 通过，非阻塞隐患入台账 |
 | Phase 3 | Scheduler & Executors | PHASE 3.3 完成 | 通过，进入 beta 可用状态 |
-| Phase 4 | Application Services | PHASE 4.1 启动切片完成 | 进行中 |
+| Phase 4 | Application Services | PHASE 4.2 完成 | 进行中 |
 | Phase 5 | Fault Tolerance | 未开始 | 未审批 |
 
 ## 3. Phase 0 — 文档职责整理
@@ -278,7 +278,7 @@ include rules pass
 
 ## 8. PHASE 4 — Application Services
 
-当前状态：已进入 PHASE 4，完成 `PHASE 4.1 Intervention Service` 启动切片。
+当前状态：已进入 PHASE 4，完成 `PHASE 4.1 Intervention Service` 与 `PHASE 4.2 Intervention Hardening & Device Reconciliation`。
 
 ### 8.1 已有应用服务切片
 
@@ -313,12 +313,48 @@ include rules pass
 | 成功干预写入 `tasks` 和 `audit_events` | 通过 |
 | 成功干预发布 `task.state_changed` 和 `task.intervention` | 通过 |
 
+### 8.3 PHASE 4.2 — Intervention Hardening & Device Reconciliation
+
+交付物：
+
+- `src/application/InterventionService.h/.cpp` 权限矩阵、二次确认和 rollback 扩展
+- `src/application/DeviceStateReconciler.h/.cpp`
+- `tests/integration/test_intervention_service.cpp` 扩展权限/确认/rollback 验收
+- `tests/integration/test_device_state_reconciler.cpp`
+
+验收项：
+
+| 检查项 | 结果 |
+|--------|------|
+| cancel/force_complete/rollback 高危操作要求权限 | 通过 |
+| force_complete/rollback 要求二次确认 | 通过 |
+| 权限拒绝时不修改任务状态 | 通过 |
+| rollback 从 Failed 进入 RollingBack 并写审计 | 通过 |
+| DeviceStateReconciler 输出 Consistent | 通过 |
+| DeviceStateReconciler 输出 DeviceAhead | 通过 |
+| DeviceStateReconciler 输出 DeviceBehind | 通过 |
+| DeviceStateReconciler 输出 Unknown | 通过 |
+
+测试证据：
+
+```bash
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
+
+结果：
+
+```text
+Debug: 7/7 tests passed
+Release: 7/7 tests passed
+include rules pass
+```
+
 遗留风险：
 
-- 权限矩阵与高危二次确认尚未实现，见 R-010。
-- DeviceStateReconciler 尚未实现，见 R-014。
+- DeviceStateReconciler 尚未接入 `AuditService::recover_running_tasks()`，R-009 继续保留。
 
-审批结论：PHASE 4.1 启动切片通过；PHASE 4 继续进行。
+审批结论：PHASE 4.2 通过；PHASE 4 继续进行。
 
 ## 9. Git 与发布审批
 
@@ -350,11 +386,11 @@ PHASE 4 当前准入状态：
 - 当前工作区可构建
 - 当前测试全部通过
 - include rule 检查通过或记录例外
-- PHASE 3.2/3.3 非阻塞隐患已记录在 `RISK_REGISTER.md`
+- PHASE 3.2/3.3 与 PHASE 4.2 非阻塞隐患已记录在 `RISK_REGISTER.md`
 - `develop` 当前已作为 PHASE 4 起点
 
 ---
 
 **文档版本**：v1.2
-**最后更新**：2026-05-16
+**最后更新**：2026-05-28
 **维护者**：hms03 / Codex

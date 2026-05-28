@@ -19,11 +19,11 @@
 | R-007 | PHASE 3.2 | `src/scheduler/ExecutorPool.*` | SimpleScheduler 非真实 ExecutorPool | 已能验证多执行器分配；取消、暂停恢复仍需任务句柄协作 | 已增加 ExecutorPool 与集成测试；取消协议另入后续风险跟踪 | `ExecutorPool` 集成测试通过 | Closed |
 | R-008 | PHASE 3.3 | `src/scheduler/SchedulingPolicy.*` | 调度策略固定 | 已有策略抽象；等待时长、资源配额和限流尚未实现 | PHASE 3 后续实现 RateLimiter 和 starvation 防护 | 策略单测和限流验收通过 | Open |
 | R-009 | PHASE 4 | `src/application/AuditService.*` | 恢复策略固定 `Running -> Paused` | 某些设备故障可能应进入 `WaitingForHuman` 或触发回滚 | 按任务类型、设备状态、checkpoint 安全性选择恢复目标 | 恢复矩阵与集成测试覆盖 | Open |
-| R-010 | PHASE 4.1 | `src/application/InterventionService.*` | ManualInterventionService 启动切片缺少权限矩阵 | pause/resume/cancel/retry/force_complete 已有原因约束和审计；权限与二次确认不足仍可能造成误操作 | PHASE 4 后续实现权限矩阵、二次确认和 rollback 干预 | 高危操作权限、二次确认和审计单测通过 | Open |
+| R-010 | PHASE 4.2 | `src/application/InterventionService.*` | ManualInterventionService 启动切片缺少权限矩阵 | 已增加权限矩阵、二次确认和 rollback 干预 | 保持后续权限模型可扩展到真实用户/角色系统 | 高危操作权限、二次确认和审计单测通过 | Closed |
 | R-011 | PHASE 5 | `src/faulttolerance/` | WatchDog/TimeoutPolicy 未实现 | 长任务或设备挂起时无法自动告警/取消/恢复 | PHASE 5 前置实现任务级 watchdog | timeout 集成测试通过 | Open |
 | R-012 | 工程 | `弃用资料/test_phase_1_2` | 历史二进制仍被版本库跟踪但已归档 | 仓库体积与可移植性受影响 | 后续确认不需保留后，从 Git 中删除并改由 build 生成 | 审批后删除跟踪二进制 | Open |
 | R-013 | PHASE 3.2 | `src/scheduler/ExecutorPool.cpp` | ExecutorPool 当前基于 `std::async` MVP | 可完成多执行器验证，但还不是固定大小线程池，1000 任务压测和 graceful shutdown 语义不足 | 引入 `BS::thread_pool` 或 Taskflow executor 适配，保留现有 `IExecutor` 窄接口 | 高压并发、关闭流程和资源上限测试通过 | Open |
-| R-014 | PHASE 4 | `src/application/` / `src/infrastructure/IDevice.h` | 缺少 DeviceStateReconciler | 软件 FSM 与物理设备状态不一致时，重启恢复可能误判任务真实结果 | 按 `TechSelection_FeatureList.md` 增加 reconcile(TaskId, IDevice, TaskState) 只读协调层 | 重启后 Consistent/DeviceAhead/DeviceBehind/Unknown 矩阵测试通过 | Open |
+| R-014 | PHASE 4.2 | `src/application/DeviceStateReconciler.*` | 缺少 DeviceStateReconciler | 已增加只读协调层，可输出 Consistent/DeviceAhead/DeviceBehind/Unknown | 下一步将协调结果接入恢复策略，R-009 继续跟踪 | 重启后 Consistent/DeviceAhead/DeviceBehind/Unknown 矩阵测试通过 | Closed |
 
 ## 开源库复用原则
 
@@ -40,5 +40,5 @@
 
 ---
 
-**最后更新**：2026-05-16
+**最后更新**：2026-05-28
 **当前策略**：PHASE 3.3 已进入 beta 可用状态；高风险项必须在发布候选前关闭或降级为明确可接受约束。
